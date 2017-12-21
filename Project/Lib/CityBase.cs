@@ -49,7 +49,8 @@ namespace CevoAILib
             {
                 if (CityObjects.Count < Count)
                     Update();
-                return IdLookup[persistentId];
+                City city = IdLookup[persistentId];
+                return city.Exists ? city : throw new KeyNotFoundException();
             }
         }
 
@@ -57,7 +58,10 @@ namespace CevoAILib
         {
             if (CityObjects.Count < Count)
                 Update();
-            return IdLookup.TryGetValue(persistentId, out city);
+            if (IdLookup.TryGetValue(persistentId, out city) && city.Exists)
+                return true;
+            city = null;
+            return false;
         }
 
         public City this[LocationId locationId]
@@ -66,7 +70,8 @@ namespace CevoAILib
             {
                 if (CityObjects.Count < Count)
                     Update();
-                return LocationLookup[locationId];
+                City city = LocationLookup[locationId];
+                return city.Exists ? city : throw new KeyNotFoundException();
             }
         }
 
@@ -74,7 +79,10 @@ namespace CevoAILib
         {
             if (CityObjects.Count < Count)
                 Update();
-            return LocationLookup.TryGetValue(locationId, out city);
+            if (LocationLookup.TryGetValue(locationId, out city) && city.Exists)
+                return true;
+            city = null;
+            return false;
         }
 
         private void Refresh()
@@ -661,7 +669,8 @@ namespace CevoAILib
             {
                 if (CityObjects.Count < Count)
                     Update();
-                return IdLookup[persistentId];
+                ForeignCity city = IdLookup[persistentId];
+                return city.Exists ? city : throw new KeyNotFoundException();
             }
         }
 
@@ -669,7 +678,10 @@ namespace CevoAILib
         {
             if (CityObjects.Count < Count)
                 Update();
-            return IdLookup.TryGetValue(persistentId, out city);
+            if (IdLookup.TryGetValue(persistentId, out city) && city.Exists)
+                return true;
+            city = null;
+            return false;
         }
 
         public ForeignCity this[LocationId locationId]
@@ -678,7 +690,8 @@ namespace CevoAILib
             {
                 if (CityObjects.Count < Count)
                     Update();
-                return LocationLookup[locationId];
+                ForeignCity city = LocationLookup[locationId];
+                return city.Exists ? city : throw new KeyNotFoundException();
             }
         }
 
@@ -686,7 +699,10 @@ namespace CevoAILib
         {
             if (CityObjects.Count < Count)
                 Update();
-            return LocationLookup.TryGetValue(locationId, out city);
+            if (LocationLookup.TryGetValue(locationId, out city) && city.Exists)
+                return true;
+            city = null;
+            return false;
         }
 
         private void Refresh()

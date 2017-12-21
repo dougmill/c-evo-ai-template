@@ -70,10 +70,23 @@ namespace CevoAILib
 
         public Unit this[UnitId id] => UnitObjects[id];
 
-        public Unit this[PersistentUnitId persistentId] => IdLookup[persistentId];
+        public Unit this[PersistentUnitId persistentId]
+        {
+            get
+            {
+                Unit unit = IdLookup[persistentId];
+                return unit.Exists ? unit : throw new KeyNotFoundException();
+            }
+        }
 
-        public bool TryGetValue(PersistentUnitId persistentId, out Unit unit) =>
-            IdLookup.TryGetValue(persistentId, out unit);
+        public bool TryGetValue(PersistentUnitId persistentId, out Unit unit)
+        {
+            if (IdLookup.TryGetValue(persistentId, out unit) && unit.Exists)
+                return true;
+            unit = null;
+            return false;
+        }
+            
 
         private void Refresh()
         {
