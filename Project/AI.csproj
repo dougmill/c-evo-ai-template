@@ -62,7 +62,6 @@
     <Compile Include="Lib\PlayResult.cs" />
     <Compile Include="Lib\Protocol.cs" />
     <Compile Include="Lib\Sprawl.cs" />
-    <Compile Include="Lib\ToughSet.cs" />
     <Compile Include="Lib\UnitBase.cs" />
     <Compile Include="Model.cs" />
     <Compile Include="Persistent.cs" />

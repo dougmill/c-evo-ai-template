@@ -30,7 +30,7 @@ Document Version: 1.1.4
 <h2>Introduction</h2>
 
 <p>
-The game allows to program its AI. This doesn't happen in the way that the existing AI is changed or some parameters are set for it but that it's completely replaced. The AI is a plugin, contained in a separate file. There can be multiple such plugins installed at the same time, then the user interface allows to switch between them easily. The Standard AI packed with the game is a normal plugin and could even be removed from the installed AI pool. 
+The game allows to program its AI. This doesn't happen in the way that the existing AI is changed or some parameters are set for it but that it's completely replaced. The AI is a plugin, contained in a separate file. There can be multiple such plugins installed at the same time, then the user interface allows to switch between them easily. The Standard AI packed with the game is a normal plugin and could even be removed from the installed AI pool.
 </p>
 
 <p>
@@ -48,7 +48,7 @@ Watch an AI play alone (without a person taking part as a player). This is very 
 Watch multiple nations controlled by a single AI compete against each other.
 </li>
 <li>
-Watch an AI compete against other AIs like the Standard AI. 
+Watch an AI compete against other AIs like the Standard AI.
 </li>
 <li>
 Run AI tournaments.
@@ -112,7 +112,7 @@ For AI built with this template, the decision which tiles to exploit by a city i
 
 <h4>Negotiation Time:</h4>
 <p>
-Contacting other nations is only possible before and after the actual turn, so you can <i>not</i> trigger a negotiation in the middle of your turn. 
+Contacting other nations is only possible before and after the actual turn, so you can <i>not</i> trigger a negotiation in the middle of your turn.
 </p>
 
 <h4>Names and Years:</h4>
@@ -134,7 +134,7 @@ The AI doesn't see simple unit moves of allied nations, only when a city is capt
 <h2>Overview</h2>
 
 <p>
-The template uses the C# language. To work on it, you need Microsoft Visual Studio, preferably in version 2008 or later (because then you can directly load the solution). Any edition is fine, including the Express Edition that you can download for free from Microsoft's website.
+The template uses the C# language. To work on it, you need Microsoft Visual Studio 2017 or later. Any edition is fine, including the Express Edition that you can download for free from Microsoft's website.
 </p>
 
 <p>
@@ -142,7 +142,7 @@ To let you work with the template, C-evo must be installed to a folder that you 
 </p>
 
 <p>
-The solution AI.sln is located in the subfolder 'Project'. It contains two projects, 'AI' and 'CevoDotNet'. 'AI' is the actual template for your AI. 'CevoDotNet' is the C-evo .NET loader (identic to the one included as binary). Don't touch this project! It's contained for no other reason than a ridiculous limitation of the Visual C# Express Edition that allows debugging a DLL only if the executable is also part of the solution. If you own a more advanced edition of Visual Studio, you may remove the CevoDotNet project from the solution, if you like.
+The solution AI.sln is located in the subfolder 'Project'. It contains two projects, 'AI' and 'CevoDotNet'. 'AI' is the actual template for your AI. 'CevoDotNet' is the C-evo .NET loader (identical to the one included as binary). Don't touch this project! It's contained for no other reason than a ridiculous limitation of the Visual C# Express Edition that allows debugging a DLL only if the executable is also part of the solution. If you own a more advanced edition of Visual Studio, you may remove the CevoDotNet project from the solution, if you like.
 </p>
 
 <p>
@@ -306,7 +306,7 @@ Examples:
 (location1 - location2).Distance &lt;= 10 -- whether two location are within a distance of 10
 </li>
 <li>
-location + new RC(1,-1) -- the east neighbor location 
+location + new RC(1,-1) -- the east neighbor location
 </li>
 </ul>
 
@@ -314,7 +314,7 @@ location + new RC(1,-1) -- the east neighbor location
 <h2>Working With Sprawls</h2>
 
 <p>
-A sprawl is a set of map locations which can be iterated in the order of increasing distance to its origin location, using the <i>foreach</i> statement. 
+A sprawl is a set of map locations which can be iterated in the order of increasing distance to its origin location, using the <i>foreach</i> statement.
 </p>
 
 <p>
@@ -326,7 +326,7 @@ The iteration of a sprawl always starts with the sprawl origin location itself. 
 </p>
 
 <p>
-The template provides 4 sprawl classes, each having its own way of distance calculation: 
+The template provides 4 sprawl classes, each having its own way of distance calculation:
 </p>
 
 <ul>
@@ -460,7 +460,7 @@ For AI, there is even more historic data available :
 
 <ul>
 <li>
-The complete list of all battles taken part in or watched as third party.
+The complete list of all battles taken part in.
 </li>
 </ul>
 
@@ -507,7 +507,7 @@ Empire.Persistent - 4k of memory for free use
 </ul>
 
 <p>
-The status properties are the easier way. You can simply write and rely on them any turn later as if there was no saving and loading of games. It is recommendable to implement higher level access to these raw values in the related classes, which alllows sharing between multiple values and expressive names. Before you set a status value, it is always 0. However, everytime the meaning or the binary format of a status is <i>changed</i> with a new version of the AI, the AI becomes incompatible to its own former games. 
+The status properties are the easier way. You can simply write and rely on them any turn later as if there was no saving and loading of games. It is recommendable to implement higher level access to these raw values in the related classes, which alllows sharing between multiple values and expressive names. Before you set a status value, it is always 0. However, everytime the meaning or the binary format of a status is <i>changed</i> with a new version of the AI, the AI becomes incompatible to its own former games.
 </p>
 
 <p>
@@ -538,7 +538,7 @@ Data that is kept for following turns to improve the speed of the AI, but which 
 <h2>Empire.Persistent</h2>
 
 <p>
-This class is meant as a high-level interface for a 4k memory area that is provided by the game, and which is subject of automatic backup and restore. Programming this class has to happen on a somewhat lower level than with the other classes. 
+This class is meant as a high-level interface for a 4k memory area that is provided by the game, and which is subject of automatic backup and restore. Programming this class has to happen on a somewhat lower level than with the other classes.
 </p>
 
 <p>
@@ -590,15 +590,15 @@ If the structure of the backup/restore memory changes, the AI will become incomp
 
 
  <h2>Startup</h2>
- 
+
  <p>
- You should have an idea of the sequence of events in the beginning of a game. 
+ You should have an idea of the sequence of events in the beginning of a game.
  </p>
- 
+
  <p>
  When a <i>new</i> game is started, the sequence is as follows:
 </p>
- 
+
  <ol>
  <li>
  world, nations, capitals and initial units are created by the game core
@@ -721,7 +721,7 @@ It's also possible (and appreciated) to create a picture for an AI, to represent
 <h2>Publishing Your AI</h2>
 
 <p>
-If you'd like to make the AI public, simply upload it to the <a href="http://c-evo.org/files">files section</a> of the project homepage. 
+If you'd like to make the AI public, simply upload it to the <a href="http://c-evo.org/files">files section</a> of the project homepage.
 </p>
 
 <p>
