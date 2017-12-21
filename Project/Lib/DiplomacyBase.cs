@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using AI;
 
 namespace CevoAILib.Diplomacy
@@ -11,137 +12,104 @@ namespace CevoAILib.Diplomacy
 
     class ItemOfChoice : ITradeItem
     {
-        public int Code { get { return Protocol.opChoose; } }
+        public int Code => Protocol.opChoose;
         public ItemOfChoice() { }
 
-        public override string ToString()
-        {
-            return "ItemOfChoice";
-        }
+        public override string ToString() => "ItemOfChoice";
     }
 
     class CopyOfMap : ITradeItem
     {
-        public int Code { get { return Protocol.opMap; } }
+        public int Code => Protocol.opMap;
         public CopyOfMap() { }
 
-        public override string ToString()
-        {
-            return "CopyOfMap";
-        }
+        public override string ToString() => "CopyOfMap";
     }
 
     class CopyOfDossier : ITradeItem
     {
         public readonly Nation Nation;
         public readonly int TurnOfReport;
-        public CopyOfDossier(Nation nation) { this.Nation = nation; this.TurnOfReport = 0; } // turn will be set by server
-        public CopyOfDossier(Nation nation, int turnOfReport) { this.Nation = nation; this.TurnOfReport = turnOfReport; }
-        public int Code { get { return Protocol.opCivilReport + (Nation.ID << 16) + TurnOfReport; } }
+        public CopyOfDossier(Nation nation) => (Nation, TurnOfReport) = (nation, 0); // turn will be set by server
+        public CopyOfDossier(Nation nation, int turnOfReport) => (Nation, TurnOfReport) = (nation, turnOfReport);
+        public int Code => Protocol.opCivilReport + (((IId) Nation.Id).Index << 16) + TurnOfReport;
 
-        public override string ToString()
-        {
-            return string.Format("CopyOfDossier {0}", Nation);
-        }
+        public override string ToString() => $"CopyOfDossier {Nation}";
     }
 
     class CopyOfMilitaryReport : ITradeItem
     {
         public readonly Nation Nation;
         public readonly int TurnOfReport;
-        public CopyOfMilitaryReport(Nation nation) { this.Nation = nation; this.TurnOfReport = 0; } // turn will be set by server
-        public CopyOfMilitaryReport(Nation nation, int turnOfReport) { this.Nation = nation; this.TurnOfReport = turnOfReport; }
-        public int Code { get { return Protocol.opMilReport + (Nation.ID << 16) + TurnOfReport; } }
+        public CopyOfMilitaryReport(Nation nation) => (Nation, TurnOfReport) = (nation, 0); // turn to be set by server
+        public CopyOfMilitaryReport(Nation nation, int turnOfReport) => (Nation, TurnOfReport) = (nation, turnOfReport);
+        public int Code => Protocol.opMilReport + (((IId) Nation.Id).Index << 16) + TurnOfReport;
 
-        public override string ToString()
-        {
-            return string.Format("CopyOfMilitaryReport {0}", Nation);
-        }
+        public override string ToString() => $"CopyOfMilitaryReport {Nation}";
     }
 
     class Payment : ITradeItem
     {
         public readonly int Amount;
-        public Payment(int amount) { this.Amount = amount; }
-        public int Code { get { return Protocol.opMoney + Amount; } }
+        public Payment(int amount) => Amount = amount;
+        public int Code => Protocol.opMoney + Amount;
 
-        public override string ToString()
-        {
-            return string.Format("Payment {0}", Amount);
-        }
+        public override string ToString() => $"Payment {Amount}";
     }
 
     class TeachAdvance : ITradeItem
     {
         public readonly Advance Advance;
-        public TeachAdvance(Advance advance) { this.Advance = advance; }
-        public int Code { get { return Protocol.opTech + (int)Advance; } }
+        public TeachAdvance(Advance advance) => Advance = advance;
+        public int Code => Protocol.opTech + (int) Advance;
 
-        public override string ToString()
-        {
-            return string.Format("TeachAdvance {0}", Advance);
-        }
+        public override string ToString() => $"TeachAdvance {Advance}";
     }
 
     class TeachAllAdvances : ITradeItem
     {
-        public int Code { get { return Protocol.opAllTech; } }
+        public int Code => Protocol.opAllTech;
         public TeachAllAdvances() { }
 
-        public override string ToString()
-        {
-            return "TeachAllAdvances";
-        }
+        public override string ToString() => "TeachAllAdvances";
     }
 
     class TeachModel : ITradeItem
     {
         public readonly ModelBase Model;
-        readonly int indexInSharedMemory;
-        public TeachModel(Model model) { this.Model = model; indexInSharedMemory = model.IndexInSharedMemory; }
-        public TeachModel(ForeignModel model) { this.Model = model; indexInSharedMemory = model.IndexInNationsSharedMemory; }
-        public int Code { get { return Protocol.opModel + indexInSharedMemory; } }
+        private readonly IId ModelId;
+        public TeachModel(Model model) => (Model, ModelId) = (model, model.Id);
+        public TeachModel(ForeignModel model)  => (Model, ModelId) = (model, model.OwnersModelId);
+        public int Code => Protocol.opModel + ModelId.Index;
 
-        public override string ToString()
-        {
-            return string.Format("TeachModel {0}", Model);
-        }
+        public override string ToString() => $"TeachModel {Model}";
     }
 
     class TeachAllModels : ITradeItem
     {
-        public int Code { get { return Protocol.opAllModel; } }
+        public int Code => Protocol.opAllModel;
         public TeachAllModels() { }
 
-        public override string ToString()
-        {
-            return "TeachAllModels";
-        }
+        public override string ToString() => "TeachAllModels";
     }
 
     class ColonyShipPartLot : ITradeItem
     {
         public readonly Building PartType;
         public readonly int Number;
-        public ColonyShipPartLot(Building partType, int number) { this.PartType = partType; this.Number = number; }
-        public int Code { get { return Protocol.opShipParts + (((int)PartType - (int)Building.ColonyShipComponent) << 16) + Number; } }
+        public ColonyShipPartLot(Building partType, int number) => (PartType, Number) = (partType, number);
+        public int Code => Protocol.opShipParts + ((PartType - Building.ColonyShipComponent) << 16) + Number;
 
-        public override string ToString()
-        {
-            return string.Format("{0} x{1}", PartType, Number);
-        }
+        public override string ToString() => $"{PartType} x{Number}";
     }
 
     class ChangeRelation : ITradeItem
     {
         public readonly Relation NewRelation;
-        public ChangeRelation(Relation newRelation) { this.NewRelation = newRelation; }
-        public int Code { get { return Protocol.opTreaty + (int)NewRelation - 1; } }
+        public ChangeRelation(Relation newRelation) => NewRelation = newRelation;
+        public int Code => Protocol.opTreaty + (int) NewRelation;
 
-        public override string ToString()
-        {
-            return string.Format("ChangeRelation {0}", NewRelation);
-        }
+        public override string ToString() => $"ChangeRelation {NewRelation}";
     }
 
     interface IStatement
@@ -152,81 +120,59 @@ namespace CevoAILib.Diplomacy
     class Notice : IStatement
     {
         public Notice() { }
-        public int Command { get { return Protocol.scDipNotice; } }
+        public int Command => Protocol.scDipNotice;
 
-        public override string ToString()
-        {
-            return "Notice";
-        }
+        public override string ToString() => "Notice";
     }
 
     class AcceptTrade : IStatement
     {
         public AcceptTrade() { }
-        public int Command { get { return Protocol.scDipAccept; } }
+        public int Command => Protocol.scDipAccept;
 
-        public override string ToString()
-        {
-            return "AcceptTrade";
-        }
+        public override string ToString() => "AcceptTrade";
     }
 
     class CancelTreaty : IStatement
     {
         public CancelTreaty() { }
-        public int Command { get { return Protocol.scDipCancelTreaty; } }
+        public int Command => Protocol.scDipCancelTreaty;
 
-        public override string ToString()
-        {
-            return "CancelTreaty";
-        }
+        public override string ToString() => "CancelTreaty";
     }
 
     class SuggestTrade : IStatement
     {
-        public int Command { get { return Protocol.scDipOffer; } }
+        public int Command => Protocol.scDipOffer;
 
         public readonly ITradeItem[] Offers;
         public readonly ITradeItem[] Wants;
 
         public SuggestTrade(ITradeItem[] offers, ITradeItem[] wants)
         {
-            if (offers == null)
-                this.Offers = new ITradeItem[0];
-            else
-                this.Offers = offers;
-            if (wants == null)
-                this.Wants = new ITradeItem[0];
-            else
-                this.Wants = wants;
+            Offers = offers ?? new ITradeItem[0];
+            Wants = wants ?? new ITradeItem[0];
         }
 
-        unsafe public void FillRawStream(int* rawStream)
+        public int[] Data
         {
-            rawStream[0] = Offers.Length;
-            for (int i = 0; i < Offers.Length; i++)
-                rawStream[2 + i] = Offers[i].Code;
-            rawStream[1] = Wants.Length;
-            for (int i = 0; i < Wants.Length; i++)
-                rawStream[2 + Offers.Length + i] = Wants[i].Code;
+            get
+            {
+                int[] data = new int[14];
+                data[0] = Offers.Length;
+                for (int i = 0; i < Offers.Length; i++)
+                    data[2 + i] = Offers[i].Code;
+                data[1] = Wants.Length;
+                for (int i = 0; i < Wants.Length; i++)
+                    data[2 + Offers.Length + i] = Wants[i].Code;
+                return data;
+            }
         }
 
         public override string ToString()
         {
-            string offerString = "nothing";
-            if (Offers.Length > 0)
-            {
-                offerString = Offers[0].ToString();
-                for (int i = 1; i < Offers.Length; i++)
-                    offerString += " + " + Offers[i].ToString();
-            }
-            string wantString = "nothing";
-            if (Wants.Length > 0)
-            {
-                wantString = Wants[0].ToString();
-                for (int i = 1; i < Wants.Length; i++)
-                    wantString += " + " + Wants[i].ToString();
-            }
+            string offerString = Offers.Length > 0 ? string.Join(" + ", (IEnumerable<ITradeItem>) Offers) : "nothing";
+            string wantString = Wants.Length > 0 ? string.Join(" + ", (IEnumerable<ITradeItem>) Wants) : "nothing";
             return "SuggestTrade " + offerString + " for " + wantString;
         }
     }
@@ -235,21 +181,15 @@ namespace CevoAILib.Diplomacy
     {
         public SuggestEnd() : base(null, null) { }
 
-        public override string ToString()
-        {
-            return "SuggestEnd";
-        }
+        public override string ToString() => "SuggestEnd";
     }
 
     class Break : IStatement
     {
         public Break() { }
-        public int Command { get { return Protocol.scDipBreak; } }
+        public int Command => Protocol.scDipBreak;
 
-        public override string ToString()
-        {
-            return "Break";
-        }
+        public override string ToString() => "Break";
     }
 
     static class StatementFactory
@@ -260,24 +200,24 @@ namespace CevoAILib.Diplomacy
             {
                 case Protocol.opChoose: return new ItemOfChoice();
                 case Protocol.opMap: return new CopyOfMap();
-                case Protocol.opCivilReport: return new CopyOfDossier(new Nation(empire, (code >> 16) & 0xFF), code & 0xFFFF);
-                case Protocol.opMilReport: return new CopyOfMilitaryReport(new Nation(empire, (code >> 16) & 0xFF), code & 0xFFFF);
+                case Protocol.opCivilReport: return new CopyOfDossier(new Nation(empire, new NationId((code >> 16) & 0xFF)), code & 0xFFFF);
+                case Protocol.opMilReport: return new CopyOfMilitaryReport(new Nation(empire, new NationId((code >> 16) & 0xFF)), code & 0xFFFF);
                 case Protocol.opMoney: return new Payment(code & 0xFFFF);
                 case Protocol.opTech: return new TeachAdvance((Advance)(code & 0xFFFF));
                 case Protocol.opAllTech: return new TeachAllAdvances();
                 case Protocol.opAllModel: return new TeachAllModels();
-                case Protocol.opShipParts: return new ColonyShipPartLot((Building)((int)Building.ColonyShipComponent + (code >> 16) & 0xFF), code & 0xFFFF);
-                case Protocol.opTreaty: return new ChangeRelation((Relation)((code & 0xFFFF) + 1));
+                case Protocol.opShipParts: return new ColonyShipPartLot((Building)((int)Building.ColonyShipComponent + ((code >> 16) & 0xFF)), code & 0xFFFF);
+                case Protocol.opTreaty: return new ChangeRelation((Relation)(code & 0xFFFF));
 
                 case Protocol.opModel:
                     {
                         if (source == empire.Us)
-                            return new TeachModel(empire.Models[code & 0xFFFF]);
+                            return new TeachModel(empire.Models[new ModelId((short) (code & 0xFFFF))]);
                         else
                         {
                             foreach (ForeignModel model in empire.ForeignModels)
                             {
-                                if (model.Nation == source && model.IndexInNationsSharedMemory == (code & 0xFFFF))
+                                if (model.Nation == source && ((IId) model.OwnersModelId).Index == (code & 0xFFFF))
                                     return new TeachModel(model);
                             }
                         }
@@ -288,7 +228,7 @@ namespace CevoAILib.Diplomacy
             }
         }
 
-        unsafe public static IStatement OpponentStatementFromCommand(AEmpire empire, Nation opponent, int command, int* rawStream)
+        public static unsafe IStatement OpponentStatementFromCommand(AEmpire empire, Nation opponent, int command, int* rawStream)
         {
             switch (command)
             {
@@ -329,60 +269,58 @@ namespace CevoAILib.Diplomacy
 
         public ExchangeOfStatements(IStatement ourStatement, IStatement opponentResponse)
         {
-            this.OurStatement = ourStatement;
-            this.OpponentResponse = opponentResponse;
+            OurStatement = ourStatement;
+            OpponentResponse = opponentResponse;
         }
     }
 
     sealed class Negotiation
     {
-        AEmpire theEmpire;
+        private readonly AEmpire TheEmpire;
         public readonly Phase Situation;
         public readonly Nation Opponent;
         public readonly List<ExchangeOfStatements> History = new List<ExchangeOfStatements>(); // sorted from new to old, newest at index 0
-        IStatement ourNextStatement;
-        public IStatement OurNextStatement { get { return ourNextStatement; } }
+        public IStatement OurNextStatement { get; private set; }
 
         public Negotiation(AEmpire empire, Phase negotiationSituation, Nation opponent)
         {
-            this.theEmpire = empire;
-            this.Situation = negotiationSituation;
-            this.Opponent = opponent;
+            TheEmpire = empire;
+            Situation = negotiationSituation;
+            Opponent = opponent;
         }
 
-        unsafe public PlayResult SetOurNextStatement(IStatement statement)
+        public unsafe PlayResult SetOurNextStatement(IStatement statement)
         {
             PlayResult result = PlayResult.Success;
-            if (statement is SuggestTrade)
+            if (statement is SuggestTrade trade)
             {
-                if (((SuggestTrade)statement).Offers.Length > 2 || ((SuggestTrade)statement).Wants.Length > 2)
+                if (trade.Offers.Length > 2 || trade.Wants.Length > 2)
                     result = new PlayResult(PlayError.RulesViolation);
 
                 // check model owners
-                foreach (ITradeItem offer in ((SuggestTrade)statement).Offers)
+                foreach (ITradeItem offer in trade.Offers)
                 {
-                    if (offer is TeachModel && ((TeachModel)offer).Model.Nation != theEmpire.Us)
+                    if (offer is TeachModel teachModel && teachModel.Model.Nation != TheEmpire.Us)
                         result = new PlayResult(PlayError.RulesViolation);
                 }
-                foreach (ITradeItem want in ((SuggestTrade)statement).Wants)
+                foreach (ITradeItem want in trade.Wants)
                 {
-                    if (want is TeachModel && ((TeachModel)want).Model.Nation != Opponent)
+                    if (want is TeachModel teachModel && teachModel.Model.Nation != Opponent)
                         result = new PlayResult(PlayError.RulesViolation);
                 }
 
                 if (result.OK)
                 {
-                    fixed (int* tradeData = new int[14])
+                    fixed (int* tradeData = trade.Data)
                     {
-                        ((SuggestTrade)statement).FillRawStream(tradeData);
-                        result = theEmpire.TestPlay(statement.Command, 0, tradeData);
+                        result = TheEmpire.TestPlay(statement.Command, 0, tradeData);
                     }
                 }
             }
             else
-                result = theEmpire.TestPlay(statement.Command);
+                result = TheEmpire.TestPlay(statement.Command);
             if (result.OK)
-                ourNextStatement = statement;
+                OurNextStatement = statement;
             return result;
         }
     }
