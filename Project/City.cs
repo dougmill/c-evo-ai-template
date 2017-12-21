@@ -6,16 +6,16 @@ namespace AI
 {
     sealed class City : ACity
     {
-        public City(Empire empire, int indexInSharedMemory)
-            : base(empire, indexInSharedMemory)
+        public City(AEmpire empire, CityId id)
+            : base(empire, id)
         {
         }
     }
 
     sealed class ForeignCity : AForeignCity
     {
-        public ForeignCity(Empire empire, int indexInSharedMemory)
-            : base (empire, indexInSharedMemory)
+        public ForeignCity(AEmpire empire, ForeignCityId id)
+            : base (empire, id)
         {
         }
     }
