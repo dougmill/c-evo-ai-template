@@ -128,7 +128,7 @@ namespace CevoAILib
     {
         protected readonly AEmpire TheEmpire;
         public readonly ModelId Id;
-        private readonly ModelData* Data;
+        protected readonly ModelData* Data;
 
         protected AModel(AEmpire empire, ModelId id, ModelData* data)
         {
@@ -309,12 +309,17 @@ namespace CevoAILib
     /// <summary>
     /// Model blueprint for military research. Class of AEmpire.Blueprint.
     /// </summary>
-    class Blueprint : AModel
+    unsafe class Blueprint : AModel
     {
         public Blueprint(AEmpire empire)
             : base(empire)
         {
         }
+
+        public int StrengthMultiplier => Data->StrengthMultiplier;
+        public int TransportMultiplier => Data->TransportMultiplier;
+        public int CostMultiplier => Data->CostMultiplier;
+        public int MaximumWeight => Data->MaxWeight;
 
         /// <summary>
         /// Set domain of model. Do this before setting properties.

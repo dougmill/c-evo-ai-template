@@ -25,14 +25,14 @@ namespace AI
         protected override void OnTurn()
         {
             // check if research complete
-            if (HadEvent__Turn(EmpireEvent.ResearchComplete))
+            if (HadEvent__Turn(EmpireEvents.ResearchComplete))
             {
                 if (random.Next(20) == 0)
                 { // start military research
                     Blueprint.SetDomain__Turn(ModelDomain.Ground);
                     Blueprint.SetProperty__Turn(ModelProperty.Weapons, 3);
                     Blueprint.SetProperty__Turn(ModelProperty.Armor, 1);
-                    Blueprint.SetProperty__Turn(ModelProperty.Mobility, Blueprint.Stage.MaximumWeight - Blueprint.Weight);
+                    Blueprint.SetProperty__Turn(ModelProperty.Mobility, Blueprint.MaximumWeight - Blueprint.Weight);
                     SetResearch__Turn(Advance.MilitaryResearch);
                 }
                 else
@@ -65,9 +65,9 @@ namespace AI
             // move units
             foreach (Unit unit in Units)
             {
-                OtherLocation[] neighborLocations = unit.Location.Neighbors;
+                Location[] neighborLocations = unit.Location.Neighbors;
                 if (neighborLocations.Length > 0)
-                    unit.MoveTo__Turn(neighborLocations[random.Next(neighborLocations.Length)].Location); // move unit to random adjacent location
+                    unit.MoveTo__Turn(neighborLocations[random.Next(neighborLocations.Length)]); // move unit to random adjacent location
             }
         }
 
@@ -105,11 +105,11 @@ namespace AI
             }
         }
 
-        protected override void OnForeignMove(IUnitInfo unit, Location destination)
+        protected override void OnForeignMove(MovingUnit unit)
         {
         }
 
-        protected override void OnBeforeForeignAttack(IUnitInfo attacker, Location target, BattleOutcome outcome)
+        protected override void OnBeforeForeignAttack(MovingUnit attacker)
         {
         }
 
@@ -122,6 +122,26 @@ namespace AI
         }
 
         protected override void OnAfterForeignCapture()
+        {
+        }
+
+        protected override void OnUnitChanged(Location location)
+        {
+            // This could mean any of:
+            //     1. A unit moved from here to somewhere you can't see.
+            //     2. A unit moved to here from somewhere you can't see.
+            //     3. A unit here died because the city supporting it was captured.
+            //     4. A unit here attacked something you can't see.
+            //     5. A unit here was attacked by something you can't see.
+            //     6. A unit was expelled to here.
+            // Unfortunately, the location is the only information the server provides.
+        }
+
+        protected override void OnDefeat(GameOverCause cause)
+        {
+        }
+
+        protected override void OnVictory(GameOverCause cause)
         {
         }
     }

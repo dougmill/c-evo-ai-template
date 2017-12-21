@@ -748,7 +748,8 @@ namespace CevoAILib
             {
                 Stacks.Remove(id);
                 UnSpiedStackLocations.Remove(id);
-                AllForeignUnits.RemoveRange(stack);
+                foreach (ForeignUnit unit in stack)
+                    AllForeignUnits.Remove(unit);
             }
 
             ScanAtIndex(index);
@@ -769,7 +770,8 @@ namespace CevoAILib
             if (newDefender.AreOtherUnitsPresent)
             {
                 ScanStack(newDefender);
-                AllForeignUnits.AddRange(Stacks[newDefender.Location.Id]);
+                foreach (ForeignUnit unit in Stacks[newDefender.Location.Id])
+                    AllForeignUnits.Add(unit);
             }
             else
             {
