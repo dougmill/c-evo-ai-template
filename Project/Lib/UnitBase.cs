@@ -664,7 +664,7 @@ namespace CevoAILib
             EmpirePtr = empire.Data;
             UnitsPtr = EmpirePtr->ForeignUnitsData;
             NumScannedIndices = 0;
-            LastBattleHistoryLength = EmpirePtr->BattleHistory.Count;
+            LastBattleHistoryLength = EmpirePtr->BattleHistoryData.Count;
             empire.OnStartOfTurnOrResume += Reset;
             ScanAdditionsToInGameList();
         }
@@ -708,11 +708,11 @@ namespace CevoAILib
             }
             if (NumScannedIndices < EmpirePtr->NumForeignDefendedLocations)
                 ScanAdditionsToInGameList();
-            for (; LastBattleHistoryLength < EmpirePtr->BattleHistory.Count; LastBattleHistoryLength++)
+            for (; LastBattleHistoryLength < EmpirePtr->BattleHistoryData.Count; LastBattleHistoryLength++)
             {
-                BattleRecord battle = EmpirePtr->BattleHistory[LastBattleHistoryLength];
-                if (battle.BattleType == BattleType.Attack)
-                    RescanLocation(battle.DefenderLocationId);
+                BattleRecordData* battle = EmpirePtr->BattleHistoryData[LastBattleHistoryLength];
+                if (battle->BattleType == BattleType.Attack)
+                    RescanLocation(battle->DefenderLocationId);
             }
             foreach (LocationId location in UnSpiedStackLocations)
                 if (EmpirePtr->MapData[location].IsSpiedOut)
@@ -727,7 +727,7 @@ namespace CevoAILib
             AddressIndices.Clear();
             AllForeignUnits.Clear();
             NumScannedIndices = 0;
-            LastBattleHistoryLength = EmpirePtr->BattleHistory.Count;
+            LastBattleHistoryLength = EmpirePtr->BattleHistoryData.Count;
             ScanAdditionsToInGameList();
         }
 

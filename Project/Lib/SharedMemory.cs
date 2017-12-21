@@ -1982,7 +1982,7 @@ namespace CevoAILib
     /// Layout in game memory of information about a past battle, size 16 bytes.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 16)]
-    struct BattleRecord
+    struct BattleRecordData
     {
         public readonly NationId EnemyId; // 1 byte
         private readonly BattleRecordFlags Flags; // 1 byte, 2 total
@@ -2015,24 +2015,26 @@ namespace CevoAILib
     /// Size 8 bytes, because the array is referenced by pointer rather than inline.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Size = 8)]
-    unsafe struct BattleHistory : IEnumerable<BattleRecord>
+    unsafe struct BattleHistoryData : IEnumerable<BattleRecordData>
     {
         public readonly int Count;
-        private readonly BattleRecord* Ptr;
+        private readonly BattleRecordData* Ptr;
 
-        public BattleRecord this[int i]
+        public BattleRecordData* this[int i]
         {
             get
             {
                 Debug.Assert(i < Count);
-                return Ptr[i];
+                return Ptr + i;
             }
         }
 
-        public IEnumerator<BattleRecord> GetEnumerator()
+        private BattleRecordData GetRecord(int i) => Ptr[i];
+
+        public IEnumerator<BattleRecordData> GetEnumerator()
         {
             for (int i = 0; i < Count; i++)
-                yield return this[i];
+                yield return GetRecord(i);
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -2102,7 +2104,7 @@ namespace CevoAILib
         public readonly WondersList Wonders; // 224 bytes, 864 total
         public readonly ColonyShipsList ColonyShips; // 180 bytes, 1044 total
         public readonly StateImprovementsList StateImprovements; // 44 bytes, 1088 total
-        public readonly BattleHistory BattleHistory; // 8 bytes, 1096 total
+        public BattleHistoryData BattleHistoryData; // 8 bytes, 1096 total
         private readonly byte* BorderHelper; // 4 bytes, 1100 total, no longer used
         public readonly NationId.IntArray LastCancelTreatyTurns; // 60 bytes, 1160 total
         public readonly int OracleIncome; // 4 bytes, 1164 total

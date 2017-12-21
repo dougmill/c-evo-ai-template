@@ -248,6 +248,7 @@ namespace CevoAILib
             Cities = new CityList(this);
             ForeignCities = new ForeignCityList(this);
             Blueprint = new Blueprint((Empire) this);
+            BattleHistory = new BattlesHistory(this, &(Data->BattleHistoryData));
             Persistent = new Persistent((Empire) this, Data->CustomData);
 
             var aiNames = new IdIndexedArray<NationId, string>(Cevo.MaxNumberOfNations);
@@ -372,7 +373,7 @@ namespace CevoAILib
         public int IncomeFromOracle => Data->OracleIncome;
         public bool CanSetResearch__Turn(Advance advance) => TestPlay(Protocol.sSetResearch, (int)advance).OK;
         public RelationDetails RelationDetailsTo(Nation nation) => new RelationDetails(this, nation);
-        public BattleHistory BattleHistory => Data->BattleHistory;
+        public BattlesHistory BattleHistory { get; }
 
         /// <summary>
         /// number of nations that are still in the game
@@ -1097,5 +1098,52 @@ namespace CevoAILib
         public int TurnOfReport => Report->TurnOfMilitaryReport;
 
         public int this[ForeignModel model] => Report->UnitCounts[model.OwnersModelId];
+    }
+
+    unsafe class BattleRecord
+    {
+        private readonly AEmpire TheEmpire;
+        private readonly BattleRecordData* Data;
+
+        public BattleRecord(AEmpire empire, BattleRecordData* data)
+        {
+            TheEmpire = empire;
+            Data = data;
+        }
+
+        public Nation Enemy => new Nation(TheEmpire, Data->EnemyId);
+        public BattleType BattleType => Data->BattleType;
+        public BattleResult BattleResult => Data->BattleResult;
+        public int Turn => Data->Turn;
+        public Model OurModel => TheEmpire.Models[Data->ModelId];
+        public ForeignModel TheirModel => TheEmpire.ForeignModels[Data->EnemyModelId];
+        public Location DefenderLocation => new Location(TheEmpire, Data->DefenderLocationId);
+        public Location AttackerLocation => new Location(TheEmpire, Data->AttackerLocationId);
+
+        public override string ToString() => Data->ToString();
+    }
+
+    unsafe class BattlesHistory : IReadOnlyList<BattleRecord>
+    {
+        private readonly AEmpire TheEmpire;
+        private readonly BattleHistoryData* Data;
+
+        public BattlesHistory(AEmpire empire, BattleHistoryData* data)
+        {
+            TheEmpire = empire;
+            Data = data;
+        }
+
+        public IEnumerator<BattleRecord> GetEnumerator()
+        {
+            for (int i = 0; i < Count; i++)
+                yield return this[i];
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public int Count => Data->Count;
+
+        public BattleRecord this[int index] => new BattleRecord(TheEmpire, (*Data)[index]);
     }
 }
