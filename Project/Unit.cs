@@ -4,11 +4,11 @@ using CevoAILib;
 
 namespace AI
 {
-	sealed class Unit : AUnit
-	{
-		public Unit(Empire empire, int indexInSharedMemory)
-			: base(empire, indexInSharedMemory)
-		{
-		}
-	}
+    sealed class Unit : AUnit
+    {
+        public Unit(Empire empire, int indexInSharedMemory)
+            : base(empire, indexInSharedMemory)
+        {
+        }
+    }
 }
