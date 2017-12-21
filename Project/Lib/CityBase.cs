@@ -85,6 +85,9 @@ namespace CevoAILib
             return false;
         }
 
+        public City this[Location location] => this[location.Id];
+        public bool TryGetValue(Location location, out City city) => TryGetValue(location.Id, out city);
+
         private void Refresh()
         {
             CityObjects.Clear();
@@ -121,9 +124,19 @@ namespace CevoAILib
 
         public IEnumerator<City> GetEnumerator()
         {
-            if (CityObjects.Count < Count)
-                Update();
-            return CityObjects.Where(city => city.Exists).GetEnumerator();
+            short i = 0;
+            do
+            {
+                while (i < CityObjects.Count)
+                {
+                    City city = CityObjects[new CityId(i)];
+                    if (city.Exists)
+                        yield return city;
+                    i++;
+                }
+                if (CityObjects.Count < Count)
+                    Update();
+            } while (i < CityObjects.Count);
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -705,6 +718,9 @@ namespace CevoAILib
             return false;
         }
 
+        public ForeignCity this[Location location] => this[location.Id];
+        public bool TryGetValue(Location location, out ForeignCity city) => TryGetValue(location.Id, out city);
+
         private void Refresh()
         {
             CityObjects.Clear();
@@ -741,9 +757,19 @@ namespace CevoAILib
 
         public IEnumerator<ForeignCity> GetEnumerator()
         {
-            if (CityObjects.Count < Count)
-                Update();
-            return CityObjects.Where(city => city.Exists).GetEnumerator();
+            short i = 0;
+            do
+            {
+                while (i < CityObjects.Count)
+                {
+                    ForeignCity city = CityObjects[new ForeignCityId(i)];
+                    if (city.Exists)
+                        yield return city;
+                    i++;
+                }
+                if (CityObjects.Count < Count)
+                    Update();
+            } while (i < CityObjects.Count);
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

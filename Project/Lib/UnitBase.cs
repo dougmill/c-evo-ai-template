@@ -105,7 +105,15 @@ namespace CevoAILib
             }
         }
 
-        public IEnumerator<Unit> GetEnumerator() => UnitObjects.Where(unit => unit.Exists).GetEnumerator();
+        public IEnumerator<Unit> GetEnumerator()
+        {
+            foreach (UnitId id in UnitId.Range(Count))
+            {
+                Unit unit = UnitObjects[id];
+                if (unit.Exists)
+                    yield return unit;
+            }
+        } 
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }

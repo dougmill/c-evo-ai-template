@@ -60,6 +60,8 @@ namespace AI
                 switch (baseCommand)
                 {
                     case Protocol.cExCollectionCreate:
+                        Debug.Assert(!Index.TryGetValue(empire, out IDictionary<int, SpyReports> dict)
+                            || !dict.ContainsKey(instanceId));
                         new SpyReports(empire, instanceId);
                         break;
                     case Protocol.cExCollectionDelete:

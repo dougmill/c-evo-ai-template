@@ -190,6 +190,9 @@ namespace CevoAILib
 
         public static RC operator -(Location location1, Location location2)
         {
+            if (!location1.IsValid || !location2.IsValid)
+                throw new ArgumentException(
+                    $"Attempted to find difference between {location1} and {location2} but at least one is not valid.");
             int wrap = location2.TheEmpire.Map.SizeX;
             int index1 = ((IId) location1.Id).Index;
             int y1 = index1 / wrap;
@@ -204,6 +207,8 @@ namespace CevoAILib
 
         public static Location operator +(Location location, RC RC)
         {
+            if (!location.IsValid)
+                throw new ArgumentException($"Attempted to add RC {RC} to invalid location {location}.");
             int wrap = location.TheEmpire.Map.SizeX;
             int index = ((IId) location.Id).Index;
             int y0 = index / wrap;
