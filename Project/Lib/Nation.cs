@@ -8,40 +8,7 @@ namespace CevoAILib
 {
     enum Phase { BeginOfTurn, Turn, EndOfTurn, ForeignTurn };
 
-    enum Relation { NoContact = 0, NoTreaty = 1, CeaseFire = 2, Peace = 3, FriendlyContact = 4, Alliance = 5, Identity = 6 }
-
-    enum Attitude { Hostile = 0, Icy = 1, Uncooperative = 2, Neutral = 3, Receptive = 4, Cordial = 5, Enthusiastic = 6 }
-
-    enum Government { Anarchy = 0, Despotism = 1, Monarchy = 2, Republic = 3, Fundamentalism = 4, Communism = 5, Democracy = 6, FutureSociety = 7 }
-
     enum EmpireEvent { ResearchComplete = 0, AnarchyOver = 3, GliderLost = 8, AircraftLost = 9, PeaceViolation = 10, PeaceEvacuation = 11 }
-
-    enum Advance
-    {
-        None = -1, MilitaryResearch = 0x800,
-
-        AdvancedFlight = 0, AmphibiousWarfare = 1, Astronomy = 2, AtomicTheory = 3, Automobile = 4,
-        Ballistics = 5, Banking = 6, BridgeBuilding = 7, BronzeWorking = 8, CeremonialBurial = 9,
-        Chemistry = 10, Chivalry = 11, Composites = 12, CodeOfLaws = 13, CombinedArms = 14,
-        CombustionEngine = 15, Communism = 16, Computers = 17, Conscription = 18, Construction = 19,
-        TheCorporation = 20, SpaceFlight = 21, Currency = 22, Democracy = 23, Economics = 24,
-        Electricity = 25, Electronics = 26, Engineering = 27, Environmentalism = 28, TheWheel = 29,
-        Explosives = 30, Flight = 31, Espionage = 32, Gunpowder = 33, HorsebackRiding = 34,
-        ImpulseDrive = 35, Industrialization = 36, SmartWeapons = 37, Invention = 38, IronWorking = 39,
-        TheLaser = 40, NuclearPower = 41, Literature = 42, TheInternet = 43, Magnetism = 44,
-        MapMaking = 45, Masonry = 46, MassProduction = 47, Mathematics = 48, Medicine = 49,
-        Metallurgy = 50, Miniaturization = 51, MobileWarfare = 52, Monarchy = 53, Mysticism = 54,
-        Navigation = 55, NuclearFission = 56, Philosophy = 57, Physics = 58, Plastics = 59,
-        Poetry = 60, Pottery = 61, Radio = 62, Recycling = 63, Refrigeration = 64,
-        Monotheism = 65, TheRepublic = 66, Robotics = 67, Rocketry = 68, Railroad = 69,
-        Sanitation = 70, Science = 71, Writing = 72, Seafaring = 73, SelfContainedEnvironment = 74,
-        Stealth = 75, SteamEngine = 76, Steel = 77, SyntheticFood = 78, Tactics = 79,
-        Theology = 80, TheoryOfGravity = 81, Trade = 82, TransstellarColonization = 83, University = 84,
-        AdvancedRocketry = 85, WarriorCode = 86, Alphabet = 87, Polytheism = 88, Refining = 89,
-        ComputingTechnology = 90, NanoTechnology = 91, MaterialTechnology = 92, ArtificialIntelligence = 93,
-
-        FirstCommon = 0, LastCommon = 89, FirstFuture = 90, LastFuture = 93
-    }
 
     struct Economy
     {
@@ -59,38 +26,6 @@ namespace CevoAILib
         public override string ToString()
         {
             return string.Format("T{0} R{1} W{2}", TaxRate, Research, Wealth);
-        }
-    }
-
-    struct ColonyShipParts
-    {
-        public readonly int ComponentCount;
-        public readonly int PowerCount;
-        public readonly int HabitationCount;
-        public int this[Building part]
-        {
-            get
-            {
-                switch (part)
-                {
-                    case Building.ColonyShipComponent: return ComponentCount;
-                    case Building.PowerModule: return PowerCount;
-                    case Building.HabitationModule: return HabitationCount;
-                    default: return 0;
-                }
-            }
-        }
-
-        public ColonyShipParts(int componentCount, int powerCount, int habitationCount)
-        {
-            this.ComponentCount = componentCount;
-            this.PowerCount = powerCount;
-            this.HabitationCount = habitationCount;
-        }
-
-        public override string ToString()
-        {
-            return string.Format("C{0} P{1} H{2}", ComponentCount, PowerCount, HabitationCount);
         }
     }
 
@@ -355,7 +290,7 @@ namespace CevoAILib
         public int IncomeFromOracle { get { return address[ROReadPoint.OracleIncome]; } }
         public bool CanSetResearch__Turn(Advance advance) { return TestPlay(Protocol.sSetResearch, (int)advance).OK; }
         public RelationDetails RelationDetailsTo(Nation nation) { return new RelationDetails(this, nation); }
-        public BattleHistory BattleHistory { get { return new BattleHistory(this); } }
+        public BattleHistory BattleHistory { get { return new BattleHistory(); } }
 
         /// <summary>
         /// number of nations that are still in the game
@@ -1194,18 +1129,6 @@ namespace CevoAILib
         int* report { get { return (int*)theEmpire.address[10 + nation.ID]; } }
 
         public int TurnOfReport { get { return report[2]; } }
-
-        // todo !!!
-    }
-
-    unsafe struct BattleHistory
-    {
-        readonly AEmpire theEmpire;
-
-        public BattleHistory(AEmpire empire)
-        {
-            theEmpire = empire;
-        }
 
         // todo !!!
     }

@@ -12,11 +12,12 @@ namespace CevoAILib
     /// </summary>
     static class Cevo
     {
-        public static GovernmentInfo Pedia(Government government) { return GovernmentInfoList[(int)government]; }
-        public static TerrainInfo Pedia(Terrain terrain) { return new TerrainInfo(terrain); }
-        public static JobInfo Pedia(Job job, Terrain terrain) { return new JobInfo(job, terrain); }
-        public static AdvanceInfo Pedia(Advance advance) { return new AdvanceInfo(advance); }
-        public static BuildingInfo Pedia(Building building) { return BuildingInfoList[(int)building]; }
+        public static GovernmentInfo Pedia(Government government) => GovernmentInfoList[(int) government];
+        public static TerrainInfo Pedia(Terrain terrain) => new TerrainInfo(terrain);
+        public static JobInfo Pedia(Job job, Terrain terrain) => new JobInfo(job, terrain);
+        public static JobInfo Pedia(Job job, Location location) => new JobInfo(job, location);
+        public static AdvanceInfo Pedia(Advance advance) => new AdvanceInfo(advance);
+        public static BuildingInfo Pedia(Building building) => BuildingInfoList[(int) building];
 
         #region Miscellaneous
         public const int MaxNumberOfNations = 15;
@@ -46,6 +47,7 @@ namespace CevoAILib
         public const int FastRecovery = 50;
         public const int DamagePerTurnInDesert = 20;
         public const int DamagePerTurnInArctic = 20;
+        public const int BridgeCost = 900;
 
         // city
         public const int MaxCitySizeBasic = 8;
@@ -85,17 +87,17 @@ namespace CevoAILib
         #endregion
 
         #region Terrain and Jobs
-        enum JobCost
+        static class JobCost
         {
-            RoadCost = 300, // *MovementKind
-            RailroadCost = 600, // *MovementKind
-            FarmlandCostMultiplier = 3, // *IrrigationCost
-            CanalCost = 1800,
-            FortressCost = 600, // *MovementKind
-            CleanUpCost = 1800,
-            BaseCost = 600, // *MovementKind
-            PillageCost = 100,
-            CityCost = 900
+            public const int RoadCost = 300, // *MovementKind
+                RailroadCost = 600, // *MovementKind
+                FarmlandCostMultiplier = 3, // *IrrigationCost
+                CanalCost = 1800,
+                FortressCost = 600, // *MovementKind
+                CleanUpCost = 1800,
+                BaseCost = 600, // *MovementKind
+                PillageCost = 100,
+                CityCost = 900;
         }
 
         public struct BaseTerrainInfo
@@ -112,122 +114,134 @@ namespace CevoAILib
             public int MineCost;
             public Terrain TransformationResult;
             public int TransformationCost;
+            public Terrain WithBasicSpecialResource;
+            public Terrain WithScienceSpecialResource;
         }
 
-        static readonly BaseTerrainInfo[] BaseTerrainInfoList =
+        static readonly Dictionary<Terrain, BaseTerrainInfo> BaseTerrainInfoList = new Dictionary<Terrain, BaseTerrainInfo>();
+        static readonly Dictionary<Terrain, BaseResourceSet> TerrainResourcesList = new Dictionary<Terrain, BaseResourceSet>();
+        static Cevo()
         {
+            BaseTerrainInfoList[Terrain.Unknown] =
             new BaseTerrainInfo {MovementKind = MovementKind.Plain, DefenseBonus = 4, ClearResult = Terrain.Unknown, ClearCost = 0, 
                 IrrigationFoodGain = 0, IrrigationCost = 0, AfforestResult = Terrain.Unknown, AfforestCost = 0, 
-                MineMaterialGain = 0, MineCost = 0, TransformationResult = Terrain.Unknown, TransformationCost = 0}, // {-}
+                    MineMaterialGain = 0, MineCost = 0, TransformationResult = Terrain.Unknown, TransformationCost = 0,
+                    WithBasicSpecialResource = Terrain.Unknown, WithScienceSpecialResource = Terrain.Unknown};
+            BaseTerrainInfoList[Terrain.DeadLands] =
             new BaseTerrainInfo {MovementKind = MovementKind.Plain, DefenseBonus = 4, ClearResult = Terrain.Unknown, ClearCost = 0, 
                 IrrigationFoodGain = 0, IrrigationCost = 0, AfforestResult = Terrain.Unknown, AfforestCost = 0, 
-                MineMaterialGain = 0, MineCost = 0, TransformationResult = Terrain.Unknown, TransformationCost = 0}, // {Ddl}
+                    MineMaterialGain = 0, MineCost = 0, TransformationResult = Terrain.Unknown, TransformationCost = 0,
+                    WithBasicSpecialResource = Terrain.DeadLands, WithScienceSpecialResource = Terrain.DeadLands};
+            BaseTerrainInfoList[Terrain.Ocean] =
             new BaseTerrainInfo {MovementKind = MovementKind.Plain, DefenseBonus = 4, ClearResult = Terrain.Unknown, ClearCost = 0, 
                 IrrigationFoodGain = 0, IrrigationCost = 0, AfforestResult = Terrain.Unknown, AfforestCost = 0, 
-                MineMaterialGain = 0, MineCost = 0, TransformationResult = Terrain.Unknown, TransformationCost = 0}, // {Ocn}
+                    MineMaterialGain = 0, MineCost = 0, TransformationResult = Terrain.Unknown, TransformationCost = 0,
+                    WithBasicSpecialResource = Terrain.Ocean, WithScienceSpecialResource = Terrain.Ocean};
+            BaseTerrainInfoList[Terrain.Shore] =
             new BaseTerrainInfo {MovementKind = MovementKind.Plain, DefenseBonus = 4, ClearResult = Terrain.Unknown, ClearCost = 0, 
                 IrrigationFoodGain = 0, IrrigationCost = 0, AfforestResult = Terrain.Unknown, AfforestCost = 0, 
-                MineMaterialGain = 0, MineCost = 0, TransformationResult = Terrain.Unknown, TransformationCost = 0}, // {Sho}
+                    MineMaterialGain = 0, MineCost = 0, TransformationResult = Terrain.Unknown, TransformationCost = 0,
+                    WithBasicSpecialResource = Terrain.Fish, WithScienceSpecialResource = Terrain.Manganese};
+            BaseTerrainInfoList[Terrain.Grassland] =
             new BaseTerrainInfo {MovementKind = MovementKind.Plain, DefenseBonus = 4, ClearResult = Terrain.Unknown, ClearCost = 0, 
                 IrrigationFoodGain = 1, IrrigationCost = 600, AfforestResult = Terrain.Forest, AfforestCost = 1800, 
-                MineMaterialGain = 0, MineCost = 0, TransformationResult = Terrain.Hills, TransformationCost = 3000}, // {Gra}
+                    MineMaterialGain = 0, MineCost = 0, TransformationResult = Terrain.Hills, TransformationCost = 3000,
+                    WithBasicSpecialResource = Terrain.Grassland, WithScienceSpecialResource = Terrain.Grassland};
+            BaseTerrainInfoList[Terrain.Desert] =
             new BaseTerrainInfo {MovementKind = MovementKind.Plain, DefenseBonus = 4, ClearResult = Terrain.Grassland, ClearCost = 1800, 
                 IrrigationFoodGain = 0, IrrigationCost = 0, AfforestResult = Terrain.Unknown, AfforestCost = 0, 
-                MineMaterialGain = 1, MineCost = 600, TransformationResult = Terrain.Prairie, TransformationCost = 3000}, // {Dst}
+                    MineMaterialGain = 1, MineCost = 600, TransformationResult = Terrain.Prairie, TransformationCost = 3000,
+                    WithBasicSpecialResource = Terrain.Oasis, WithScienceSpecialResource = Terrain.Oil};
+            BaseTerrainInfoList[Terrain.Prairie] =
             new BaseTerrainInfo {MovementKind = MovementKind.Plain, DefenseBonus = 4, ClearResult = Terrain.Unknown, ClearCost = 0, 
                 IrrigationFoodGain = 1, IrrigationCost = 600, AfforestResult = Terrain.Forest, AfforestCost = 2400, 
-                MineMaterialGain = 0, MineCost = 0, TransformationResult = Terrain.Unknown, TransformationCost = 0}, // {Pra}
+                    MineMaterialGain = 0, MineCost = 0, TransformationResult = Terrain.Unknown, TransformationCost = 0,
+                    WithBasicSpecialResource = Terrain.Wheat, WithScienceSpecialResource = Terrain.Bauxite};
+            BaseTerrainInfoList[Terrain.Tundra] =
             new BaseTerrainInfo {MovementKind = MovementKind.Plain, DefenseBonus = 4, ClearResult = Terrain.Unknown, ClearCost = 0, 
                 IrrigationFoodGain = 1, IrrigationCost = 600, AfforestResult = Terrain.Unknown, AfforestCost = 0, 
-                MineMaterialGain = 0, MineCost = 0, TransformationResult = Terrain.Grassland, TransformationCost = 3000}, // {Tun}
+                    MineMaterialGain = 0, MineCost = 0, TransformationResult = Terrain.Grassland, TransformationCost = 3000,
+                    WithBasicSpecialResource = Terrain.Gold, WithScienceSpecialResource = Terrain.Gas};
+            BaseTerrainInfoList[Terrain.Arctic] =
             new BaseTerrainInfo {MovementKind = MovementKind.Difficult, DefenseBonus = 4, ClearResult = Terrain.Unknown, ClearCost = 0, 
                 IrrigationFoodGain = 0, IrrigationCost = 0, AfforestResult = Terrain.Unknown, AfforestCost = 0, 
-                MineMaterialGain = 3, MineCost = 1800, TransformationResult = Terrain.Unknown, TransformationCost = 0}, // {Arc}
+                    MineMaterialGain = 3, MineCost = 1800, TransformationResult = Terrain.Unknown, TransformationCost = 0,
+                    WithBasicSpecialResource = Terrain.Ivory, WithScienceSpecialResource = Terrain.Ivory};
+            BaseTerrainInfoList[Terrain.Swamp] =
             new BaseTerrainInfo {MovementKind = MovementKind.Difficult, DefenseBonus = 6, ClearResult = Terrain.Grassland, ClearCost = 2400, 
                 IrrigationFoodGain = 0, IrrigationCost = 0, AfforestResult = Terrain.Forest, AfforestCost = 2400, 
-                MineMaterialGain = 0, MineCost = 0, TransformationResult = Terrain.Hills, TransformationCost = 3000}, // {Swa}
+                    MineMaterialGain = 0, MineCost = 0, TransformationResult = Terrain.Hills, TransformationCost = 3000,
+                    WithBasicSpecialResource = Terrain.Peat, WithScienceSpecialResource = Terrain.Peat};
+            BaseTerrainInfoList[Terrain.Plains] =
             new BaseTerrainInfo {MovementKind = MovementKind.Plain, DefenseBonus = 4, ClearResult = Terrain.Unknown, ClearCost = 0, 
                 IrrigationFoodGain = 1, IrrigationCost = 600, AfforestResult = Terrain.Forest, AfforestCost = 1800, 
-                MineMaterialGain = 0, MineCost = 0, TransformationResult = Terrain.Hills, TransformationCost = 3000}, // {Gra}
+                    MineMaterialGain = 0, MineCost = 0, TransformationResult = Terrain.Hills, TransformationCost = 3000,
+                    WithBasicSpecialResource = Terrain.Plains, WithScienceSpecialResource = Terrain.Plains};
+            BaseTerrainInfoList[Terrain.Forest] =
             new BaseTerrainInfo {MovementKind = MovementKind.Difficult, DefenseBonus = 6, ClearResult = Terrain.Prairie, ClearCost = 600, 
                 IrrigationFoodGain = 0, IrrigationCost = 0, AfforestResult = Terrain.Unknown, AfforestCost = 0, 
-                MineMaterialGain = 0, MineCost = 0, TransformationResult = Terrain.Unknown, TransformationCost = 0}, // {For}
+                    MineMaterialGain = 0, MineCost = 0, TransformationResult = Terrain.Unknown, TransformationCost = 0,
+                    WithBasicSpecialResource = Terrain.Game, WithScienceSpecialResource = Terrain.MineralWater};
+            BaseTerrainInfoList[Terrain.Hills] =
             new BaseTerrainInfo {MovementKind = MovementKind.Difficult, DefenseBonus = 8, ClearResult = Terrain.Unknown, ClearCost = 0, 
                 IrrigationFoodGain = 1, IrrigationCost = 600, AfforestResult = Terrain.Unknown, AfforestCost = 0, 
-                MineMaterialGain = 3, MineCost = 1200, TransformationResult = Terrain.Grassland, TransformationCost = 6000}, // {Hil}
+                    MineMaterialGain = 3, MineCost = 1200, TransformationResult = Terrain.Grassland, TransformationCost = 6000,
+                    WithBasicSpecialResource = Terrain.Wine, WithScienceSpecialResource = Terrain.Coal};
+            BaseTerrainInfoList[Terrain.Mountains] =
             new BaseTerrainInfo {MovementKind = MovementKind.Mountains, DefenseBonus = 12, ClearResult = Terrain.Unknown, ClearCost = 0, 
                 IrrigationFoodGain = 0, IrrigationCost = 0, AfforestResult = Terrain.Unknown, AfforestCost = 0, 
-                MineMaterialGain = 2, MineCost = 1200, TransformationResult = Terrain.Unknown, TransformationCost = 0} // {Mou}
-        };
+                    MineMaterialGain = 2, MineCost = 1200, TransformationResult = Terrain.Unknown, TransformationCost = 0,
+                    WithBasicSpecialResource = Terrain.Iron, WithScienceSpecialResource = Terrain.Diamonds};
 
-        static readonly BaseResourceSet[] TerrainResourcesList = 
-        {
-            new BaseResourceSet{Food = 0, Material = 0, Trade = 0}, // {-}
-            new BaseResourceSet{Food = 0, Material = 1, Trade = 1}, // {Dst}
-            new BaseResourceSet{Food = 0, Material = 0, Trade = 0}, // {Ocn}
-            new BaseResourceSet{Food = 1, Material = 0, Trade = 3}, // {Sho}
-            new BaseResourceSet{Food = 3, Material = 0, Trade = 1}, // {Gra}
-            new BaseResourceSet{Food = 0, Material = 1, Trade = 1}, // {Dst}
-            new BaseResourceSet{Food = 1, Material = 1, Trade = 1}, // {Pra}
-            new BaseResourceSet{Food = 1, Material = 0, Trade = 1}, // {Tun}
-            new BaseResourceSet{Food = 0, Material = 1, Trade = 0}, // {Arc}
-            new BaseResourceSet{Food = 1, Material = 0, Trade = 1}, // {Swa}
-            new BaseResourceSet{Food = 2, Material = 1, Trade = 1}, // {Gra1}
-            new BaseResourceSet{Food = 1, Material = 2, Trade = 1}, // {For}
-            new BaseResourceSet{Food = 1, Material = 0, Trade = 0}, // {Hil}
-            new BaseResourceSet{Food = 0, Material = 1, Trade = 0}, // {Mou}
-            new BaseResourceSet{Food = 0, Material = 0, Trade = 0}, // {-}
-            new BaseResourceSet{Food = 0, Material = 0, Trade = 0}, // {-}
-            new BaseResourceSet{Food = 0, Material = 0, Trade = 0}, // {-}
-            new BaseResourceSet{Food = 0, Material = 1, Trade = 1}, // {Dst}
-            new BaseResourceSet{Food = 0, Material = 0, Trade = 0}, // {-}
-            new BaseResourceSet{Food = 5, Material = 0, Trade = 3}, // {Sho1}
-            new BaseResourceSet{Food = 0, Material = 0, Trade = 0}, // {-}
-            new BaseResourceSet{Food = 3, Material = 1, Trade = 1}, // {Dst1}
-            new BaseResourceSet{Food = 3, Material = 1, Trade = 1}, // {Pra1}
-            new BaseResourceSet{Food = 1, Material = 0, Trade = 6}, // {Tun1}
-            new BaseResourceSet{Food = 3, Material = 1, Trade = 4}, // {Arc1}
-            new BaseResourceSet{Food = 1, Material = 4, Trade = 1}, // {Swa1}
-            new BaseResourceSet{Food = 0, Material = 0, Trade = 0}, // {-}
-            new BaseResourceSet{Food = 3, Material = 2, Trade = 1}, // {For1}
-            new BaseResourceSet{Food = 1, Material = 0, Trade = 4}, // {Hil1}
-            new BaseResourceSet{Food = 0, Material = 4, Trade = 0}, // {Mou1}
-            new BaseResourceSet{Food = 0, Material = 0, Trade = 0}, // {-}
-            new BaseResourceSet{Food = 0, Material = 0, Trade = 0}, // {-}
-            new BaseResourceSet{Food = 0, Material = 0, Trade = 0}, // {-}
-            new BaseResourceSet{Food = 0, Material = 1, Trade = 1}, // {Dst}        
-            new BaseResourceSet{Food = 0, Material = 0, Trade = 0}, // {-}
-            new BaseResourceSet{Food = 1, Material = 5, Trade = 3}, // {Sho2}
-            new BaseResourceSet{Food = 0, Material = 0, Trade = 0}, // {-}
-            new BaseResourceSet{Food = 0, Material = 4, Trade = 1}, // {Dst2}
-            new BaseResourceSet{Food = 1, Material = 3, Trade = 1}, // {Pra2} 
-            new BaseResourceSet{Food = 1, Material = 4, Trade = 1}, // {Tun2}            
-            new BaseResourceSet{Food = 0, Material = 0, Trade = 0}, // {-}
-            new BaseResourceSet{Food = 0, Material = 0, Trade = 0}, // {-}
-            new BaseResourceSet{Food = 0, Material = 0, Trade = 0}, // {-}
-            new BaseResourceSet{Food = 1, Material = 2, Trade = 4}, // {For2}
-            new BaseResourceSet{Food = 1, Material = 2, Trade = 0}, // {Hil2}
-            new BaseResourceSet{Food = 0, Material = 1, Trade = 7}, // {Mou2}      
-            new BaseResourceSet{Food = 0, Material = 0, Trade = 0}, // {-}
-            new BaseResourceSet{Food = 0, Material = 0, Trade = 0}, // {-}
-            new BaseResourceSet{Food = 0, Material = 0, Trade = 0}, // {-}
-            new BaseResourceSet{Food = 0, Material = 1, Trade = 1} // {Dst}
-        };
+            TerrainResourcesList[Terrain.Unknown] = new BaseResourceSet {Food = 0, Material = 0, Trade = 0};
+            TerrainResourcesList[Terrain.DeadLands] = new BaseResourceSet {Food = 0, Material = 1, Trade = 1};
+            TerrainResourcesList[Terrain.Ocean] = new BaseResourceSet {Food = 0, Material = 0, Trade = 0};
+            TerrainResourcesList[Terrain.Shore] = new BaseResourceSet {Food = 1, Material = 0, Trade = 3};
+            TerrainResourcesList[Terrain.Grassland] = new BaseResourceSet {Food = 3, Material = 0, Trade = 1};
+            TerrainResourcesList[Terrain.Desert] = new BaseResourceSet {Food = 0, Material = 1, Trade = 1};
+            TerrainResourcesList[Terrain.Prairie] = new BaseResourceSet {Food = 1, Material = 1, Trade = 1};
+            TerrainResourcesList[Terrain.Tundra] = new BaseResourceSet {Food = 1, Material = 0, Trade = 1};
+            TerrainResourcesList[Terrain.Arctic] = new BaseResourceSet {Food = 0, Material = 1, Trade = 0};
+            TerrainResourcesList[Terrain.Swamp] = new BaseResourceSet {Food = 1, Material = 0, Trade = 1};
+            TerrainResourcesList[Terrain.Plains] = new BaseResourceSet {Food = 2, Material = 1, Trade = 1};
+            TerrainResourcesList[Terrain.Forest] = new BaseResourceSet {Food = 1, Material = 2, Trade = 1};
+            TerrainResourcesList[Terrain.Hills] = new BaseResourceSet {Food = 1, Material = 0, Trade = 0};
+            TerrainResourcesList[Terrain.Mountains] = new BaseResourceSet {Food = 0, Material = 1, Trade = 0};
+            TerrainResourcesList[Terrain.Fish] = new BaseResourceSet {Food = 5, Material = 0, Trade = 3};
+            TerrainResourcesList[Terrain.Oasis] = new BaseResourceSet {Food = 3, Material = 1, Trade = 1};
+            TerrainResourcesList[Terrain.Wheat] = new BaseResourceSet {Food = 3, Material = 1, Trade = 1};
+            TerrainResourcesList[Terrain.Gold] = new BaseResourceSet {Food = 1, Material = 0, Trade = 6};
+            TerrainResourcesList[Terrain.Ivory] = new BaseResourceSet {Food = 3, Material = 1, Trade = 4};
+            TerrainResourcesList[Terrain.Peat] = new BaseResourceSet {Food = 1, Material = 4, Trade = 1};
+            TerrainResourcesList[Terrain.Game] = new BaseResourceSet {Food = 3, Material = 2, Trade = 1};
+            TerrainResourcesList[Terrain.Wine] = new BaseResourceSet {Food = 1, Material = 0, Trade = 4};
+            TerrainResourcesList[Terrain.Iron] = new BaseResourceSet {Food = 0, Material = 4, Trade = 0};
+            TerrainResourcesList[Terrain.Manganese] = new BaseResourceSet {Food = 1, Material = 5, Trade = 3};
+            TerrainResourcesList[Terrain.Oil] = new BaseResourceSet {Food = 0, Material = 4, Trade = 1};
+            TerrainResourcesList[Terrain.Bauxite] = new BaseResourceSet {Food = 1, Material = 3, Trade = 1};
+            TerrainResourcesList[Terrain.Gas] = new BaseResourceSet {Food = 1, Material = 4, Trade = 1};
+            TerrainResourcesList[Terrain.MineralWater] = new BaseResourceSet {Food = 1, Material = 2, Trade = 4};
+            TerrainResourcesList[Terrain.Coal] = new BaseResourceSet {Food = 1, Material = 2, Trade = 0};
+            TerrainResourcesList[Terrain.Diamonds] = new BaseResourceSet {Food = 0, Material = 1, Trade = 7};
+            TerrainResourcesList[Terrain.Cobalt] = new BaseResourceSet {Food = 0, Material = 1, Trade = 1};
+            TerrainResourcesList[Terrain.Uranium] = new BaseResourceSet {Food = 0, Material = 1, Trade = 1};
+            TerrainResourcesList[Terrain.Mercury] = new BaseResourceSet {Food = 0, Material = 1, Trade = 1};
+        }
 
         static readonly Advance[] JobPrerequisites =
         {
-            Advance.None, Advance.None, Advance.Railroad,Advance.None,Advance.None,
-            Advance.Refrigeration,Advance.None,Advance.None,Advance.Explosives,Advance.Explosives,
-            Advance.Construction,Advance.None,Advance.Medicine,Advance.None,Advance.None
+            Advance.None, Advance.None, Advance.Railroad, Advance.None, Advance.None,
+            Advance.Refrigeration, Advance.None, Advance.None, Advance.Explosives, Advance.Explosives,
+            Advance.Construction, Advance.None, Advance.Medicine, Advance.None, Advance.None
         };
 
         public struct TerrainInfo
         {
-            Terrain terrain;
-            public TerrainInfo(Terrain terrain) { this.terrain = terrain; }
-            public BaseResourceSet Resources { get { return TerrainResourcesList[(int)terrain]; } }
-            public MovementKind MovementKind { get { return BaseTerrainInfoList[(int)terrain & 0xF].MovementKind; } }
-            public int DefenseBonus { get { return BaseTerrainInfoList[(int)terrain & 0xF].DefenseBonus; } }
+            public readonly Terrain Terrain;
+            public TerrainInfo(Terrain terrain) => Terrain = terrain;
+            public BaseResourceSet Resources => TerrainResourcesList[Terrain];
+            public MovementKind MovementKind => BaseTerrainInfoList[Terrain & Terrain.BaseTerrainMask].MovementKind;
+            public int DefenseBonus => BaseTerrainInfoList[Terrain & Terrain.BaseTerrainMask].DefenseBonus;
         }
 
         public struct JobInfo
@@ -238,6 +252,12 @@ namespace CevoAILib
             public BaseResourceSet Gain;
             public Advance Prerequisite;
 
+            public JobInfo(Job job, Location location) : this(job, location.Terrain)
+            {
+                if ((job == Job.BuildRoad || job == Job.BuildRailRoad) && location.HasRiver)
+                    Cost += BridgeCost;
+            }
+
             public JobInfo(Job job, Terrain terrain)
             {
                 IsPossible = false;
@@ -245,7 +265,20 @@ namespace CevoAILib
                 NewTerrain = terrain;
                 Gain = new BaseResourceSet(0, 0, 0);
                 Prerequisite = JobPrerequisites[(int)job];
-                Terrain baseTerrain = (Terrain)((int)terrain & 0xF);
+
+                Terrain baseTerrain = terrain & Terrain.NonDeadlandsBaseTerrainMask;
+                switch (baseTerrain)
+                {
+                    case Terrain.Ocean:
+                    case Terrain.Shore:
+                    case Terrain.Unknown:
+                        return;
+                    case Terrain.Desert:
+                        if ((terrain & Terrain.BaseTerrainMask) == Terrain.DeadLands
+                            && job != Job.BuildRoad && job != Job.BuildRailRoad && job != Job.Pillage)
+                            return;
+                        break;
+                }
 
                 switch (job)
                 {
@@ -257,8 +290,8 @@ namespace CevoAILib
                     case CevoAILib.Job.BuildRoad:
                         {
                             IsPossible = true;
-                            Cost = (int)JobCost.RoadCost * (int)BaseTerrainInfoList[(int)baseTerrain].MovementKind;
-                            if (BaseTerrainInfoList[(int)baseTerrain].MovementKind == MovementKind.Plain)
+                            Cost = JobCost.RoadCost * (int) BaseTerrainInfoList[baseTerrain].MovementKind;
+                            if (BaseTerrainInfoList[baseTerrain].MovementKind == MovementKind.Plain)
                                 Gain.Trade = 1;
                             break;
                         }
@@ -266,67 +299,69 @@ namespace CevoAILib
                     case CevoAILib.Job.BuildRailRoad:
                         {
                             IsPossible = true;
-                            Cost = (int)JobCost.RailroadCost * (int)BaseTerrainInfoList[(int)baseTerrain].MovementKind;
-                            Gain.Material = (TerrainResourcesList[(int)terrain].Material + BaseTerrainInfoList[(int)baseTerrain].MineMaterialGain) / 2;
-                            // assume mine as already built, if possible
+                            Cost = JobCost.RailroadCost * (int) BaseTerrainInfoList[baseTerrain].MovementKind;
+                            // assume mine is already built, if possible
+                            Gain.Material = (TerrainResourcesList[terrain].Material
+                                + BaseTerrainInfoList[baseTerrain].MineMaterialGain) / 2;
                             break;
                         }
 
                     case CevoAILib.Job.ClearOrDrain:
                         {
-                            if (BaseTerrainInfoList[(int)baseTerrain].ClearResult != Terrain.Unknown)
+                            if (BaseTerrainInfoList[baseTerrain].ClearResult != Terrain.Unknown)
                             {
                                 IsPossible = true;
-                                Cost = BaseTerrainInfoList[(int)baseTerrain].ClearCost;
-                                NewTerrain = BaseTerrainInfoList[(int)baseTerrain].ClearResult;
+                                Cost = BaseTerrainInfoList[baseTerrain].ClearCost;
+                                NewTerrain = BaseTerrainInfoList[baseTerrain].ClearResult;
                                 if (NewTerrain != Terrain.Grassland)
-                                    NewTerrain = (Terrain)((int)NewTerrain + ((int)terrain & 0xF0)); // keep special resource
+                                    NewTerrain = NewTerrain | (terrain & Terrain.SpecialMask); // keep special resource
                             }
                             break;
                         }
 
                     case CevoAILib.Job.Irrigate:
                         {
-                            if (BaseTerrainInfoList[(int)baseTerrain].IrrigationFoodGain > 0)
+                            if (BaseTerrainInfoList[baseTerrain].IrrigationFoodGain > 0)
                             {
                                 IsPossible = true;
-                                Cost = BaseTerrainInfoList[(int)baseTerrain].IrrigationCost;
-                                Gain.Food = BaseTerrainInfoList[(int)baseTerrain].IrrigationFoodGain;
+                                Cost = BaseTerrainInfoList[baseTerrain].IrrigationCost;
+                                Gain.Food = BaseTerrainInfoList[baseTerrain].IrrigationFoodGain;
                             }
                             break;
                         }
 
                     case CevoAILib.Job.BuildFarmland:
                         {
-                            if (BaseTerrainInfoList[(int)baseTerrain].IrrigationFoodGain > 0)
+                            if (BaseTerrainInfoList[baseTerrain].IrrigationFoodGain > 0)
                             {
                                 IsPossible = true;
-                                Cost = (int)JobCost.FarmlandCostMultiplier * BaseTerrainInfoList[(int)baseTerrain].IrrigationCost;
-                                Gain.Food = (TerrainResourcesList[(int)terrain].Food + BaseTerrainInfoList[(int)baseTerrain].IrrigationFoodGain) / 2;
+                                Cost = JobCost.FarmlandCostMultiplier * BaseTerrainInfoList[baseTerrain].IrrigationCost;
+                                Gain.Food = (TerrainResourcesList[terrain].Food
+                                    + BaseTerrainInfoList[baseTerrain].IrrigationFoodGain) / 2;
                             }
                             break;
                         }
 
                     case CevoAILib.Job.Afforest:
                         {
-                            if (BaseTerrainInfoList[(int)baseTerrain].AfforestResult != Terrain.Unknown)
+                            if (BaseTerrainInfoList[baseTerrain].AfforestResult != Terrain.Unknown)
                             {
                                 IsPossible = true;
-                                Cost = BaseTerrainInfoList[(int)baseTerrain].AfforestCost;
-                                NewTerrain = BaseTerrainInfoList[(int)baseTerrain].AfforestResult;
+                                Cost = BaseTerrainInfoList[baseTerrain].AfforestCost;
+                                NewTerrain = BaseTerrainInfoList[baseTerrain].AfforestResult;
                                 if (NewTerrain != Terrain.Grassland)
-                                    NewTerrain = (Terrain)((int)NewTerrain + ((int)terrain & 0xF0)); // keep special resource
+                                    NewTerrain = NewTerrain | (terrain & Terrain.SpecialMask); // keep special resource
                             }
                             break;
                         }
 
                     case CevoAILib.Job.BuildMine:
                         {
-                            if (BaseTerrainInfoList[(int)baseTerrain].MineMaterialGain > 0)
+                            if (BaseTerrainInfoList[baseTerrain].MineMaterialGain > 0)
                             {
                                 IsPossible = true;
-                                Cost = BaseTerrainInfoList[(int)baseTerrain].MineCost;
-                                Gain.Material = BaseTerrainInfoList[(int)baseTerrain].MineMaterialGain;
+                                Cost = BaseTerrainInfoList[baseTerrain].MineCost;
+                                Gain.Material = BaseTerrainInfoList[baseTerrain].MineMaterialGain;
                             }
                             break;
                         }
@@ -334,19 +369,19 @@ namespace CevoAILib
                     case CevoAILib.Job.BuildCanal:
                         {
                             IsPossible = (baseTerrain != Terrain.Mountains && baseTerrain != Terrain.Arctic);
-                            Cost = (int)JobCost.CanalCost;
+                            Cost = JobCost.CanalCost;
                             break;
                         }
 
                     case CevoAILib.Job.Transform:
                         {
-                            if (BaseTerrainInfoList[(int)baseTerrain].TransformationResult != Terrain.Unknown)
+                            if (BaseTerrainInfoList[baseTerrain].TransformationResult != Terrain.Unknown)
                             {
                                 IsPossible = true;
-                                Cost = BaseTerrainInfoList[(int)baseTerrain].TransformationCost;
-                                NewTerrain = BaseTerrainInfoList[(int)baseTerrain].TransformationResult;
+                                Cost = BaseTerrainInfoList[baseTerrain].TransformationCost;
+                                NewTerrain = BaseTerrainInfoList[baseTerrain].TransformationResult;
                                 if (NewTerrain != Terrain.Grassland)
-                                    NewTerrain = (Terrain)((int)NewTerrain + ((int)terrain & 0xF0)); // keep special resource
+                                    NewTerrain = NewTerrain | (terrain & Terrain.SpecialMask); // keep special resource
                             }
                             break;
                         }
@@ -354,39 +389,38 @@ namespace CevoAILib
                     case CevoAILib.Job.BuildFortress:
                         {
                             IsPossible = true;
-                            Cost = (int)JobCost.FortressCost * (int)BaseTerrainInfoList[(int)baseTerrain].MovementKind;
+                            Cost = JobCost.FortressCost * (int) BaseTerrainInfoList[baseTerrain].MovementKind;
                             break;
                         }
 
                     case CevoAILib.Job.CleanUp:
                         {
                             IsPossible = true;
-                            Cost = (int)JobCost.CleanUpCost;
+                            Cost = JobCost.CleanUpCost;
                             break;
                         }
 
                     case CevoAILib.Job.BuildBase:
                         {
                             IsPossible = true;
-                            Cost = (int)JobCost.BaseCost * (int)BaseTerrainInfoList[(int)baseTerrain].MovementKind;
+                            Cost = JobCost.BaseCost * (int) BaseTerrainInfoList[baseTerrain].MovementKind;
                             break;
                         }
 
                     case CevoAILib.Job.Pillage:
                         {
                             IsPossible = true;
-                            Cost = (int)JobCost.PillageCost;
+                            Cost = JobCost.PillageCost;
                             break;
                         }
 
                     case CevoAILib.Job.BuildCity:
                         {
-                            IsPossible = (BaseTerrainInfoList[(int)baseTerrain].IrrigationFoodGain > 0);
-                            Cost = (int)JobCost.CityCost;
+                            IsPossible = (BaseTerrainInfoList[baseTerrain].IrrigationFoodGain > 0);
+                            Cost = JobCost.CityCost;
                             break;
                         }
                 }
-                IsPossible = IsPossible && baseTerrain >= Terrain.Grassland;
             }
         }
         #endregion
@@ -396,11 +430,9 @@ namespace CevoAILib
         {
             public List<Advance> Prerequisites;
 
-            public AdvanceInfo(Advance advance)
-            {
-                Prerequisites = new List<Advance>(AdvancePrerequisites[(int)advance]);
+            public AdvanceInfo(Advance advance) =>
+                Prerequisites = new List<Advance>(AdvancePrerequisites[(int) advance]);
             }
-        }
 
         static readonly Advance[][] AdvancePrerequisites =
         {
@@ -447,7 +479,7 @@ namespace CevoAILib
             new Advance[] {Advance.Miniaturization, Advance.Physics}, // TheLaser
             new Advance[] {Advance.NuclearFission}, // NuclearPower
             new Advance[] {Advance.Poetry, Advance.Trade}, // Literature
-            new Advance[] {Advance.Democracy, Advance.Computers}, // Lybertarianism
+            new Advance[] {Advance.Democracy, Advance.Computers}, // Lybertarianism, aka The Internet
             new Advance[] {Advance.Physics, Advance.IronWorking}, // Magnetism
             new Advance[] {Advance.Alphabet}, // MapMaking
             new Advance[] {}, // Masonry
@@ -584,6 +616,9 @@ namespace CevoAILib
             new BuildingInfo {Kind = BuildingKind.ColonyShipPart, Prerequisite = Advance.ImpulseDrive, Cost = 600, Maintenance = 0}, // ShipPow
             new BuildingInfo {Kind = BuildingKind.ColonyShipPart, Prerequisite = Advance.SelfContainedEnvironment, Cost = 800, Maintenance = 0} // ShipHab
         };
+
+        public const Building StartOfMaintenanceRange = Building.Barracks;
+        public const Building EndOfMaintenanceRange = Building.StockExchange;
         #endregion
     }
 }

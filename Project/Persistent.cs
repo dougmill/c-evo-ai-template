@@ -6,7 +6,7 @@ namespace AI
 {
     unsafe class Persistent
     {
-        struct MyData
+        public struct MyData
         {
             public int Version;
             public fixed short EstimatedStrength[Cevo.MaxNumberOfNations];

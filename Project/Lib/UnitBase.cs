@@ -4,12 +4,6 @@ using AI;
 
 namespace CevoAILib
 {
-    enum Job
-    {
-        None = 0, BuildRoad = 1, BuildRailRoad = 2, ClearOrDrain = 3, Irrigate = 4, BuildFarmland = 5, Afforest = 6, BuildMine = 7,
-        BuildCanal = 8, Transform = 9, BuildFortress = 10, CleanUp = 11, BuildBase = 12, Pillage = 13, BuildCity = 14
-    }
-
     enum SpyMission { SabotageProduction = 1, StealMaps = 2, CollectThirdNationKnowledge = 3, PrepareDossier = 4, PrepareMilitaryReport = 5 }
 
     struct BattleOutcome

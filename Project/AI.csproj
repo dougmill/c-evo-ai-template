@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="City.cs" />
+    <Compile Include="Lib\SharedMemory.cs" />
     <Compile Include="Empire.cs" />
     <Compile Include="Lib\AddressPriorityQueue.cs" />
     <Compile Include="Lib\CevoPedia.cs" />

@@ -4,30 +4,6 @@ using AI;
 
 namespace CevoAILib
 {
-    enum Building
-    {
-        None = 28,
-
-        Pyramids = 0, TempleOfZeus = 1, HangingGardens = 2, Colossus = 3, Lighthouse = 4,
-        GreatLibrary = 5, Oracle = 6, SunTsusWarAcademy = 7, LeonardosWorkshop = 8, MagellansExpedition = 9,
-        MichelangelosChapel = 10, NewtonsCollege = 12, BachsCathedral = 13,
-        StatueOfLiberty = 15, EiffelTower = 16, HooverDam = 17, ShinkansenExpress = 18, ManhattanProject = 19,
-        MIRSpaceStation = 20,
-        WonderRange = 28, // for logic only, < WonderRange means wonder (better use Cevo.Pedia(Building).Kind)
-
-        Barracks = 29, Granary = 30, Temple = 31, Marketplace = 32, Library = 33, Courthouse = 34,
-        CityWalls = 35, Aqueduct = 36, Bank = 37, Cathedral = 38, University = 39,
-        Harbor = 40, Theater = 41, Factory = 42, MfgPlant = 43, RecyclingCenter = 44,
-        PowerStation = 45, HydroelectricDam = 46, NuclearPlant = 47, OffshorePlatform = 48, TownHall = 49,
-        SewerSystem = 50, Supermarket = 51, Superhighways = 52, ResearchLab = 53, SAM = 54,
-        CoastalFortress = 55, Airport = 56, Dockyard = 57,
-
-        Palace = 58, GreatWall = 59, Colosseum = 60, Observatory = 61, MilitaryAcademy = 62,
-        CommandBunker = 63, AlgaePlant = 64, StockExchange = 65, SpacePort = 66,
-
-        ColonyShipComponent = 67, PowerModule = 68, HabitationModule = 69,
-    }
-
     enum CityEvent
     {
         CivilDisorder = 0, ProductionComplete = 1, PopulationGrowth = 2, PopulationDecrease = 3, UnitDisbanded = 4,
@@ -36,9 +12,6 @@ namespace CevoAILib
     }
 
     //enum ExploitableLocationStatus { Available = 0, ExploitedByOtherCity = 1, Siege = 2, DisallowedByTreaty = 4 }
-
-    [Flags]
-    enum UnitProductionOptions { None = 0x00, AllowDisbandCity = 0x01, AsConscripts = 0x02 }
 
     /// <summary>
     /// Input parameter for City.OptimizeExploitedLocations__Turn method

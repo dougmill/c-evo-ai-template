@@ -4,24 +4,6 @@ using AI;
 
 namespace CevoAILib
 {
-    enum ModelDomain { Ground = 0, Sea = 1, Air = 2 }
-
-    enum ModelKind
-    {
-        OwnDesign = 0x00, ForeignDesign = 0x01, LongBoats = 0x08, TownGuard = 0x10, Glider = 0x11,
-        Slaves = 0x21, Settlers = 0x22, SpecialCommando = 0x23, Freight = 0x24, Engineers = 0x122
-    }
-
-    enum ModelProperty
-    {
-        Weapons = 0, Armor = 1, Mobility = 2, SeaTransport = 3, Carrier = 4,
-        Turbines = 5, Bombs = 6, Fuel = 7, AirTransport = 8, Navigation = 9,
-        RadarSonar = 10, Submarine = 11, Artillery = 12, Alpine = 13, SupplyShip = 14,
-        Overweight = 15, AirDefence = 16, SpyPlane = 17, SteamPower = 18, NuclearPower = 19,
-        JetEngines = 20, Stealth = 21, Fanatic = 22, FirstStrike = 23, PowerOfWill = 24,
-        AcademyTraining = 25, LineProduction = 26
-    }
-
     struct Stage
     {
         public readonly int MaximumWeight;
