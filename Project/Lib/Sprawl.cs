@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Common;
 
 namespace CevoAILib
 {
     struct TravelDistance
     {
-        public static TravelDistance Invalid { get { return new TravelDistance(-1, 0, true); } }
+        public static TravelDistance Invalid => new TravelDistance(-1, 0, true);
 
         public readonly int Turns;
         public readonly int MovementLeft;
@@ -18,69 +19,68 @@ namespace CevoAILib
         {
             if (turns < 0)
             {
-                this.Turns = -1;
-                this.MovementLeft = 0;
-                this.NewTurn = true;
+                Turns = -1;
+                MovementLeft = 0;
+                NewTurn = true;
             }
             else
             {
-                this.Turns = turns;
-                this.MovementLeft = movementLeft;
-                this.NewTurn = newTurn;
+                Turns = turns;
+                MovementLeft = movementLeft;
+                NewTurn = newTurn;
             }
         }
 
-        public override string ToString()
+        public override string ToString() => $"{Turns}.{MovementLeft}";
+
+        public static bool operator <(TravelDistance d1, TravelDistance d2) => Comparison(d1, d2) < 0;
+        public static bool operator >(TravelDistance d1, TravelDistance d2) => Comparison(d1, d2) > 0;
+        public static bool operator ==(TravelDistance d1, TravelDistance d2) => Comparison(d1, d2) == 0;
+        public static bool operator !=(TravelDistance d1, TravelDistance d2) => Comparison(d1, d2) != 0;
+        public static bool operator <=(TravelDistance d1, TravelDistance d2) => Comparison(d1, d2) <= 0;
+        public static bool operator >=(TravelDistance d1, TravelDistance d2) => Comparison(d1, d2) >= 0;
+        public override bool Equals(object obj)
         {
-            return string.Format("{0}.{1}", Turns, MovementLeft);
+            Debug.Assert(obj is TravelDistance);
+            return Comparison(this, (TravelDistance) obj) == 0;
         }
 
-        public static bool operator <(TravelDistance d1, TravelDistance d2) { return Comparison(d1, d2) < 0; }
-        public static bool operator >(TravelDistance d1, TravelDistance d2) { return Comparison(d1, d2) > 0; }
-        public static bool operator ==(TravelDistance d1, TravelDistance d2) { return Comparison(d1, d2) == 0; }
-        public static bool operator !=(TravelDistance d1, TravelDistance d2) { return Comparison(d1, d2) != 0; }
-        public static bool operator <=(TravelDistance d1, TravelDistance d2) { return Comparison(d1, d2) <= 0; }
-        public static bool operator >=(TravelDistance d1, TravelDistance d2) { return Comparison(d1, d2) >= 0; }
-        public override bool Equals(object obj) { return Comparison(this, (TravelDistance)obj) == 0; }
-        public override int GetHashCode() { return (Turns + 2) << 12 - MovementLeft; }
+        public override int GetHashCode() => (Turns + 2) << 12 - MovementLeft;
 
-        public static int Comparison(TravelDistance d1, TravelDistance d2)
-        {
-            return ((d1.Turns + 2) << 12) - d1.MovementLeft - ((d2.Turns + 2) << 12) + d2.MovementLeft;
-        }
+        public static int Comparison(TravelDistance d1, TravelDistance d2) =>
+            ((d1.Turns + 2) << 12) - d1.MovementLeft - ((d2.Turns + 2) << 12) + d2.MovementLeft;
     }
 
     class Sprawl : IEnumerable<Location>
     {
-        protected readonly AEmpire theEmpire;
-        protected readonly int originID;
-        protected readonly int startValue;
-        protected int approachLocationID = -1;
-        protected bool approachLocationWasIterated = false;
+        protected readonly AEmpire TheEmpire;
+        protected readonly LocationId OriginId;
+        protected readonly int StartValue;
+        protected LocationId ApproachLocationId = new LocationId(-1);
+        protected bool ApproachLocationWasIterated = false;
         protected readonly AddressPriorityQueue Q;
-        protected int currentLocationID = -1;
-        protected int currentValue = 0;
-        protected int[] neighborIDs = new int[8];
-        protected ushort[] backtrace;
-        Enumerator enumerator = null;
+        protected LocationId CurrentLocationId = new LocationId(-1);
+        protected int CurrentValue = 0;
+        protected IdIndexedArray<LocationId, LocationId> Backtrace;
+        private SprawlEnumerator Enumerator = null;
 
         public Sprawl(AEmpire empire, Location origin, int startValue)
         {
-            this.theEmpire = empire;
-            this.originID = origin.ID;
-            this.startValue = startValue;
+            TheEmpire = empire;
+            OriginId = origin.Id;
+            StartValue = startValue;
             Q = new AddressPriorityQueue(empire.Map.Size - 1);
-            backtrace = new ushort[empire.Map.Size];
+            Backtrace = new IdIndexedArray<LocationId, LocationId>(empire.Map.Size);
         }
 
         public bool WasIterated(Location location)
         {
-            if (location.ID == approachLocationID)
-                return approachLocationWasIterated;
+            if (location.Id == ApproachLocationId)
+                return ApproachLocationWasIterated;
             else
             {
-                int distance = Q.Distance(location.ID);
-                return (distance != AddressPriorityQueue.Unknown && distance != AddressPriorityQueue.Disallowed);
+                int distance = Q.Distance(((IId) location.Id).Index);
+                return distance != AddressPriorityQueue.Unknown && distance != AddressPriorityQueue.Disallowed;
             }
         }
 
@@ -89,23 +89,23 @@ namespace CevoAILib
             if (WasIterated(location))
             {
                 int stepCount = 0;
-                ushort locationID = (ushort)location.ID;
-                if (locationID == approachLocationID)
-                    locationID = backtrace[locationID];
-                while (locationID != originID)
+                LocationId locationId = location.Id;
+                if (locationId == ApproachLocationId)
+                    locationId = Backtrace[locationId];
+                while (locationId != OriginId)
                 {
                     stepCount++;
-                    locationID = backtrace[locationID];
+                    locationId = Backtrace[locationId];
                 }
                 Location[] result = new Location[stepCount];
-                locationID = (ushort)location.ID;
-                if (locationID == approachLocationID)
-                    locationID = backtrace[locationID];
-                while (locationID != originID)
+                locationId = location.Id;
+                if (locationId == ApproachLocationId)
+                    locationId = Backtrace[locationId];
+                while (locationId != OriginId)
                 {
                     stepCount--;
-                    result[stepCount] = new Location(theEmpire, locationID);
-                    locationID = backtrace[locationID];
+                    result[stepCount] = new Location(TheEmpire, locationId);
+                    locationId = Backtrace[locationId];
                 }
                 return result;
             }
@@ -113,44 +113,40 @@ namespace CevoAILib
                 return null; // not reached yet
         }
 
-        protected enum StepValidity { OK, ForbiddenStep, ForbiddenLocation }
+        protected enum StepValidity { Ok, ForbiddenStep, ForbiddenLocation }
 
-        protected virtual StepValidity Step(int fromLocationId, int toLocationId, int distance, int fromValue, ref int toValue)
+        protected virtual StepValidity Step(LocationId fromLocationId, LocationId toLocationId, int distance, int fromValue, ref int toValue)
         {
             toValue = fromValue + distance;
-            return StepValidity.OK;
+            return StepValidity.Ok;
         }
 
         protected virtual bool MoveNext()
         {
             bool approached = false;
-            if (currentLocationID >= 0 && currentLocationID != approachLocationID)
+            if (CurrentLocationId.IsValid && CurrentLocationId != ApproachLocationId)
             { // first check to reach neighbors from last iterated location
-                theEmpire.Map.GetNeighborIDs(currentLocationID, neighborIDs);
-                for (int V8 = 0; V8 < 8; V8++)
+                foreach (OtherLocation otherLocation in TheEmpire.Map.NeighborOtherLocations[CurrentLocationId])
                 {
-                    int nextLocationID = neighborIDs[V8];
-                    if (nextLocationID >= 0)
+                    LocationId nextLocationId = otherLocation.Location.Id;
+                    if (nextLocationId == ApproachLocationId && !ApproachLocationWasIterated)
                     {
-                        if (nextLocationID == approachLocationID && !approachLocationWasIterated)
+                        Backtrace[nextLocationId] = CurrentLocationId;
+                        approached = true;
+                    }
+                    else if (Q.Distance(((IId) nextLocationId).Index) == AddressPriorityQueue.Unknown)
+                    {
+                        int nextValue = 0;
+                        switch (Step(CurrentLocationId, nextLocationId, otherLocation.RC.Distance, CurrentValue, ref nextValue))
                         {
-                            backtrace[nextLocationID] = (ushort)currentLocationID;
-                            approached = true;
-                        }
-                        else if (Q.Distance(nextLocationID) == AddressPriorityQueue.Unknown)
-                        {
-                            int nextValue = 0;
-                            switch (Step(currentLocationID, nextLocationID, 2 + (V8 & 1), currentValue, ref nextValue))
+                            case StepValidity.Ok:
                             {
-                                case StepValidity.OK:
-                                    {
-                                        if (Q.Offer(nextLocationID, nextValue))
-                                            backtrace[nextLocationID] = (ushort)currentLocationID;
-                                        break;
-                                    }
-                                case StepValidity.ForbiddenStep: break; // just don't offer
-                                case StepValidity.ForbiddenLocation: Q.Disallow(nextLocationID); break; // don't try to reach from every direction again
+                                if (Q.Offer(((IId) nextLocationId).Index, nextValue))
+                                    Backtrace[nextLocationId] = CurrentLocationId;
+                                break;
                             }
+                            case StepValidity.ForbiddenStep: break; // just don't offer
+                            case StepValidity.ForbiddenLocation: Q.Disallow(((IId) nextLocationId).Index); break; // don't try to reach from any direction again
                         }
                     }
                 }
@@ -158,49 +154,54 @@ namespace CevoAILib
 
             if (approached)
             {
-                currentLocationID = approachLocationID;
-                approachLocationWasIterated = true;
+                CurrentLocationId = ApproachLocationId;
+                ApproachLocationWasIterated = true;
                 return true;
             }
             else
-                return Q.TakeClosest(out currentLocationID, out currentValue);
+            {
+                bool retval = Q.TakeClosest(out int nextIdNum, out CurrentValue);
+                CurrentLocationId = new LocationId(nextIdNum);
+                return retval;
+            }
         }
 
         void EnumerationEnded()
         {
-            if (enumerator == null)
+            if (Enumerator == null)
                 throw new Exception("Error in Sprawl: Only started foreach loop can end!");
-            enumerator.DisposeEvent -= EnumerationEnded;
-            enumerator = null;
+            Enumerator.DisposeEvent -= EnumerationEnded;
+            Enumerator = null;
         }
 
         #region IEnumerable members
-        class Enumerator : IEnumerator<Location>
+        private class SprawlEnumerator : IEnumerator<Location>
         {
-            Sprawl parent;
-            public Enumerator(Sprawl parent) { this.parent = parent; }
+            private readonly Sprawl Parent;
+            public SprawlEnumerator(Sprawl parent) => Parent = parent;
+
             public delegate void DisposeEventHandler();
             public event DisposeEventHandler DisposeEvent;
-            public void Reset() { throw new NotSupportedException(); }
-            public bool MoveNext() { return parent.MoveNext(); }
-            public void Dispose() { DisposeEvent(); }
-            public Location Current { get { return new Location(parent.theEmpire, parent.currentLocationID); } }
-            object System.Collections.IEnumerator.Current { get { return Current; } }
+            public void Reset() => throw new NotSupportedException();
+            public bool MoveNext() => Parent.MoveNext();
+            public void Dispose() => DisposeEvent();
+            public Location Current => new Location(Parent.TheEmpire, Parent.CurrentLocationId);
+            object System.Collections.IEnumerator.Current => Current;
         }
 
         public IEnumerator<Location> GetEnumerator()
         {
-            if (enumerator != null)
+            if (Enumerator != null)
                 throw new Exception("Sprawl: Nested iteration is not supported!");
             Q.Clear();
-            Q.Offer(originID, startValue);
-            currentLocationID = -1;
-            approachLocationWasIterated = false;
-            enumerator = new Enumerator(this);
-            enumerator.DisposeEvent += EnumerationEnded;
-            return enumerator;
+            Q.Offer(((IId) OriginId).Index, StartValue);
+            CurrentLocationId = new LocationId(-1);
+            ApproachLocationWasIterated = false;
+            Enumerator = new SprawlEnumerator(this);
+            Enumerator.DisposeEvent += EnumerationEnded;
+            return Enumerator;
         }
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return GetEnumerator(); }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
         #endregion
     }
 
@@ -212,44 +213,41 @@ namespace CevoAILib
     {
         public enum TerrainGroup { AllLand, AllWater, Shore }
 
-        TerrainGroup restriction;
+        private readonly TerrainGroup Restriction;
 
         public RestrictedSprawl(AEmpire empire, Location origin, TerrainGroup restriction)
-            : base(empire, origin, 0)
-        {
-            this.restriction = restriction;
-        }
+            : base(empire, origin, 0) => Restriction = restriction;
 
         public int Distance(Location location)
         {
-            int distance = Q.Distance(location.ID);
+            int distance = Q.Distance(((IId) location.Id).Index);
             if (distance != AddressPriorityQueue.Unknown && distance != AddressPriorityQueue.Disallowed)
                 return distance;
             else
                 return -1; // not reached yet
         }
 
-        protected override StepValidity Step(int fromLocationId, int toLocationId, int distance, int fromValue, ref int toValue)
+        protected override StepValidity Step(LocationId fromLocationId, LocationId toLocationId, int distance, int fromValue, ref int toValue)
         {
-            Location toLocation = new Location(theEmpire, toLocationId);
+            Location toLocation = new Location(TheEmpire, toLocationId);
             toValue = fromValue + distance;
-            switch (restriction)
+            switch (Restriction)
             {
                 default: // TerrainGroup.AllLand:
                     if (toLocation.IsDiscovered && !toLocation.IsWater)
-                        return StepValidity.OK;
+                        return StepValidity.Ok;
                     else
                         return StepValidity.ForbiddenLocation;
 
                 case TerrainGroup.AllWater:
                     if (toLocation.IsDiscovered && toLocation.IsWater)
-                        return StepValidity.OK;
+                        return StepValidity.Ok;
                     else
                         return StepValidity.ForbiddenLocation;
 
                 case TerrainGroup.Shore:
                     if (toLocation.BaseTerrain == Terrain.Shore)
-                        return StepValidity.OK;
+                        return StepValidity.Ok;
                     else
                         return StepValidity.ForbiddenLocation;
             }
@@ -261,22 +259,6 @@ namespace CevoAILib
     /// </summary>
     class TravelSprawl : Sprawl
     {
-        static readonly MovementKind[] rawTerrainMovementKind = 
-        {
-            MovementKind.Plain, //Ocn
-            MovementKind.Plain, //Sho
-            MovementKind.Plain, //Gra
-            MovementKind.Plain, //Dst
-            MovementKind.Plain, //Pra
-            MovementKind.Plain, //Tun
-            MovementKind.Difficult, //Arc
-            MovementKind.Difficult, //Swa
-            MovementKind.Difficult, //-
-            MovementKind.Difficult, //For
-            MovementKind.Difficult, //Hil
-            MovementKind.Mountains //Mou
-        };
-
         [Flags]
         public enum Options
         {
@@ -284,13 +266,13 @@ namespace CevoAILib
             ZeroCostRailroad = 0x010, TerrainResistant = 0x020, Overweight = 0x040, Alpine = 0x080, Navigation = 0x100
         }
 
-        const int NewTurn = 0x1;
+        private const int NewTurn = 0x1;
 
-        protected ModelDomain domain;
-        protected int speed;
-        protected Options options;
-        protected int baseDifficultMoveCost;
-        protected int baseRailroadMoveCost;
+        protected ModelDomain Domain;
+        protected int Speed;
+        protected Options MovementOptions;
+        protected int BaseDifficultMoveCost;
+        protected int BaseRailroadMoveCost;
 
         /// <summary>
         /// Create general unit movement iterator for an existing or hypothetical unit.
@@ -301,24 +283,24 @@ namespace CevoAILib
         /// <param name="domain">unit domain</param>
         /// <param name="unitSpeed">speed of the unit</param>
         /// <param name="initialMovementLeft">initial movement points left</param>
-        /// <param name="options">options</param>
-        public TravelSprawl(AEmpire empire, Nation nation, Location origin, ModelDomain domain, int unitSpeed, int initialMovementLeft, Options options)
-            : base(empire, origin, unitSpeed - initialMovementLeft)
+        /// <param name="movementOptions">options</param>
+        public TravelSprawl(AEmpire empire, Nation nation, Location origin, ModelDomain domain, int unitSpeed, int initialMovementLeft, Options movementOptions)
+            : base(empire, origin, (unitSpeed - initialMovementLeft) << 1)
         {
-            this.domain = domain;
-            this.speed = unitSpeed;
-            this.options = options;
+            Domain = domain;
+            Speed = unitSpeed;
+            MovementOptions = movementOptions;
             if (nation != empire.Us)
-                options |= Options.EmptyPlanet; // default location info relates to own nation, so it can't be considered then
+                MovementOptions |= Options.EmptyPlanet; // default location info relates to own nation, so it can't be considered then
             if (nation.HasWonder(Building.ShinkansenExpress))
-                options |= Options.ZeroCostRailroad;
+                MovementOptions |= Options.ZeroCostRailroad;
             if (nation.HasWonder(Building.HangingGardens))
-                options |= Options.TerrainResistant;
-            baseDifficultMoveCost = 100 + (unitSpeed - 150) / 5;
-            if ((options & Options.ZeroCostRailroad) != 0)
-                baseRailroadMoveCost = 0;
+                MovementOptions |= Options.TerrainResistant;
+            BaseDifficultMoveCost = 100 + (unitSpeed - 150) / 5;
+            if ((MovementOptions & Options.ZeroCostRailroad) != 0)
+                BaseRailroadMoveCost = 0;
             else
-                baseRailroadMoveCost = (unitSpeed / 50) * 4;
+                BaseRailroadMoveCost = (unitSpeed / 50) * 4;
         }
 
         /// <summary>
@@ -333,17 +315,30 @@ namespace CevoAILib
         }
 
         /// <summary>
+        /// Special unit movement iterator for planning additional movement after another not yet executed movement.
+        /// </summary>
+        /// <param name="empire">empire</param>
+        /// <param name="unit">the unit</param>
+        /// <param name="startLocation">location the unit will be at to start this movement</param>
+        /// <param name="movementLeft">movement left over after the previous movement</param>
+        public TravelSprawl(AEmpire empire, AUnit unit, Location startLocation, int movementLeft)
+            : this(empire, unit.Nation, startLocation, unit.Model.Domain, unit.Speed, movementLeft, Options.None)
+        {
+            SetOptionsFromUnit(unit);
+        }
+
+        /// <summary>
         /// Special unit movement iterator when the goal is to move an own unit adjacent to a certain location.
         /// </summary>
         /// <param name="empire">empire</param>
         /// <param name="unit">the unit</param>
-        /// <param name="approachLocation">loaction to approach to</param>
+        /// <param name="approachLocation">location to approach to</param>
         public TravelSprawl(AEmpire empire, AUnit unit, Location approachLocation)
             : this(empire, unit)
         {
-            approachLocationID = approachLocation.ID;
+            ApproachLocationId = approachLocation.Id;
             if (unit.Location != approachLocation)
-                Q.Disallow(approachLocationID);
+                Q.Disallow(((IId) ApproachLocationId).Index);
         }
 
         /// <summary>
@@ -360,17 +355,17 @@ namespace CevoAILib
         public TravelDistance Distance(Location location)
         {
             int distance = 0;
-            if (location.ID == approachLocationID)
+            if (location.Id == ApproachLocationId)
             {
-                if (!approachLocationWasIterated)
+                if (!ApproachLocationWasIterated)
                     return TravelDistance.Invalid; // not reached yet
 
-                distance = Q.Distance(backtrace[approachLocationID]);
+                distance = Q.Distance(((IId) Backtrace[ApproachLocationId]).Index);
             }
             else
-                distance = Q.Distance(location.ID);
+                distance = Q.Distance(((IId) location.Id).Index);
             if (distance != AddressPriorityQueue.Unknown && distance != AddressPriorityQueue.Disallowed)
-                return new TravelDistance(distance >> 12, speed - ((distance >> 1) & 0x7FF), (distance & NewTurn) != 0);
+                return new TravelDistance(distance >> 12, Speed - ((distance >> 1) & 0x7FF), (distance & NewTurn) != 0);
             else
                 return TravelDistance.Invalid; // not reached yet
         }
@@ -378,39 +373,40 @@ namespace CevoAILib
         /// <summary>
         /// damage the unit would receive from hostile terrain travelling to a location before it reaches an intermediate non-hostile terrain location
         /// </summary>
-        /// <param name="location">the location to travel to</param>
+        /// <param name="fromLocation">the location to travel from</param>
+        /// <param name="toLocation">the location to travel to</param>
         /// <returns>the damage</returns>
         public int DamageToNextNonHostileLocation(Location fromLocation, Location toLocation)
         {
-            if ((options & Options.TerrainResistant) == 0 && WasIterated(toLocation))
+            if ((MovementOptions & Options.TerrainResistant) == 0 && WasIterated(toLocation))
             {
                 int damage = 0;
-                ushort locationID = (ushort)toLocation.ID;
-                if (locationID == approachLocationID)
-                    locationID = backtrace[locationID];
+                LocationId locationId = toLocation.Id;
+                if (locationId == ApproachLocationId)
+                    locationId = Backtrace[locationId];
                 int sourceTerrainDamage = 0;
                 int sourceDistance = 0;
-                int destinationTerrainDamage = new Location(theEmpire, locationID).OneTurnHostileDamage;
-                int destinationDistance = Q.Distance(locationID);
-                while (locationID != fromLocation.ID)
+                int destinationTerrainDamage = new Location(TheEmpire, locationId).OneTurnHostileDamage;
+                int destinationDistance = Q.Distance(((IId) locationId).Index);
+                while (locationId != fromLocation.Id)
                 {
-                    locationID = backtrace[locationID];
-                    sourceTerrainDamage = new Location(theEmpire, locationID).OneTurnHostileDamage;
-                    sourceDistance = Q.Distance(locationID);
-                    if (locationID != fromLocation.ID && sourceTerrainDamage == 0)
+                    locationId = Backtrace[locationId];
+                    sourceTerrainDamage = new Location(TheEmpire, locationId).OneTurnHostileDamage;
+                    sourceDistance = Q.Distance(((IId) locationId).Index);
+                    if (locationId != fromLocation.Id && sourceTerrainDamage == 0)
                         damage = 0;
                     else if ((destinationDistance & NewTurn) != 0)
                     { // move has to wait for next turn
                         if (sourceTerrainDamage > 0 &&
-                            ((sourceDistance >> 1) & 0x7FF) < speed) // movement left
-                            damage += (sourceTerrainDamage * (speed - ((sourceDistance >> 1) & 0x7FF)) - 1) / speed + 1; // unit spends rest of turn here
+                            ((sourceDistance >> 1) & 0x7FF) < Speed) // movement left
+                            damage += (sourceTerrainDamage * (Speed - ((sourceDistance >> 1) & 0x7FF)) - 1) / Speed + 1; // unit spends rest of turn here
                         if (destinationTerrainDamage > 0)
-                            damage += (destinationTerrainDamage * ((destinationDistance >> 1) & 0x7FF) - 1) / speed + 1; // move
+                            damage += (destinationTerrainDamage * ((destinationDistance >> 1) & 0x7FF) - 1) / Speed + 1; // move
                     }
                     else
                     {
                         if (destinationTerrainDamage > 0)
-                            damage += (destinationTerrainDamage * (((destinationDistance >> 1) & 0x7FF) - ((sourceDistance >> 1) & 0x7FF)) - 1) / speed + 1; // move
+                            damage += (destinationTerrainDamage * (((destinationDistance >> 1) & 0x7FF) - ((sourceDistance >> 1) & 0x7FF)) - 1) / Speed + 1; // move
                     }
                     destinationTerrainDamage = sourceTerrainDamage;
                     destinationDistance = sourceDistance;
@@ -424,140 +420,136 @@ namespace CevoAILib
         void SetOptionsFromUnit(IUnitInfo unit)
         {
             if (unit.Model.Domain != ModelDomain.Ground || unit.Model.Kind == ModelKind.SpecialCommando)
-                options |= Options.IgnoreZoC;
+                MovementOptions |= Options.IgnoreZoC;
             if (unit.Model.Kind == ModelKind.SpecialCommando)
-                options |= Options.IgnoreTreaty;
-            if (domain != ModelDomain.Ground || unit.IsTerrainResistant)
-                options |= Options.TerrainResistant;
+                MovementOptions |= Options.IgnoreTreaty;
+            if (Domain != ModelDomain.Ground || unit.IsTerrainResistant)
+                MovementOptions |= Options.TerrainResistant;
             if (unit.Model.HasFeature(ModelProperty.Overweight))
-                options |= Options.Overweight;
+                MovementOptions |= Options.Overweight;
             if (unit.Model.HasFeature(ModelProperty.Alpine))
-                options |= Options.Alpine;
+                MovementOptions |= Options.Alpine;
             if (unit.Model.HasFeature(ModelProperty.Navigation))
-                options |= Options.Navigation;
+                MovementOptions |= Options.Navigation;
         }
 
-        unsafe protected override StepValidity Step(int fromLocationID, int toLocationID, int distance, int fromValue, ref int toValue)
+        protected override StepValidity Step(LocationId fromLocationID, LocationId toLocationID, int distance, int fromValue, ref int toValue)
         {
-            switch (domain)
+            switch (Domain)
             {
                 default: // case ModelDomain.Ground
                     {
-                        int fromTile = theEmpire.Map.Ground[fromLocationID];
-                        int toTile = theEmpire.Map.Ground[toLocationID];
+                        LocationData fromTile = TheEmpire.Map.Ground[fromLocationID];
+                        LocationData toTile = TheEmpire.Map.Ground[toLocationID];
                         int moveCost = 100;
 
-                        if ((toTile & 0x1F) == 0x1F)
-                            return StepValidity.ForbiddenLocation; // not discovered
+                        if (!toTile.IsDiscovered)
+                            return StepValidity.ForbiddenLocation;
 
-                        if ((toTile & 0x600000) == 0x400000 && (options & Options.IgnoreBlocking) == 0)
-                            return StepValidity.ForbiddenLocation; // foreign unit
+                        if (toTile.HasForeignUnit && (MovementOptions & Options.IgnoreBlocking) == 0)
+                            return StepValidity.ForbiddenLocation;
 
-                        if ((toTile & 0x1E) == 0x00)
-                            return StepValidity.ForbiddenLocation; // water
+                        if (toTile.IsWater)
+                            return StepValidity.ForbiddenLocation;
 
-                        if ((toTile & 0x40000000) != 0 && (options & Options.IgnoreTreaty) == 0)
+                        if (toTile.IsDisallowedTerritory && (MovementOptions & Options.IgnoreTreaty) == 0)
                         {
-                            if ((fromTile & 0x40000000) == 0 ||
-                                new Location(theEmpire, fromLocationID).TerritoryNation != new Location(theEmpire, toLocationID).TerritoryNation)
+                            if (!fromTile.IsDisallowedTerritory ||
+                                new Location(TheEmpire, fromLocationID).TerritoryNation != new Location(TheEmpire, toLocationID).TerritoryNation)
                                 return StepValidity.ForbiddenStep; // treaty
                         }
 
-                        if ((options & Options.IgnoreZoC) == 0 &&
-                            (fromTile & 0x800000) == 0 && // not coming out of city
-                            (toTile & 0xA00000) != 0xA00000 && // not moving into own city
-                            (fromTile & 0x20000000) != 0 && // fromLocation in ZoC
-                            (toTile & 0x30000000) == 0x20000000) // toLocation in ZoC
+                        if ((MovementOptions & Options.IgnoreZoC) == 0 &&
+                            !fromTile.HasAnyCity && // not coming out of city
+                            !toTile.HasOwnCity && // not moving into own city
+                            fromTile.IsInForeignZoC && // fromLocation in ZoC
+                            toTile.IsInForeignZoC && // toLocation in ZoC
+                            !toTile.HasOwnZoCUnit) // ZoC not negated by own unit at toLocation
                             return StepValidity.ForbiddenStep; // ZoC violation
 
-                        if ((fromTile & 0x800200) != 0 && (toTile & 0x800200) != 0) // both locations have railroad or city
-                            moveCost = baseRailroadMoveCost;
-                        else if ((options & Options.Alpine) != 0 ||
-                            ((fromTile & 0x800300) != 0 && (toTile & 0x800300) != 0) || // both locations have road, railroad or city
-                            (fromTile & toTile & 0x480) != 0) // both locations have river or both locations have canal
+                        int terrainDamagePerTurn;
+                        if (fromTile.HasRailRoad && toTile.HasRailRoad)
+                            moveCost = BaseRailroadMoveCost;
+                        else if ((MovementOptions & Options.Alpine) != 0 ||
+                            (fromTile.HasRoad && toTile.HasRoad) ||
+                            (fromTile.HasRiver && toTile.HasRiver) ||
+                            (fromTile.HasCanal && toTile.HasCanal))
                         {
-                            if ((options & Options.Overweight) != 0)
-                                moveCost = 80;
-                            else
-                                moveCost = 40;
+                            moveCost = (MovementOptions & Options.Overweight) != 0 ? 80 : 40;
                         }
                         else
                         {
-                            if ((options & Options.Overweight) != 0)
+                            if ((MovementOptions & Options.Overweight) != 0)
                                 return StepValidity.ForbiddenStep;
 
-                            switch (rawTerrainMovementKind[toTile & 0xF])
+                            switch (toTile.MovementKind)
                             {
                                 case MovementKind.Plain: { moveCost = 100; break; }
-                                case MovementKind.Difficult: { moveCost = baseDifficultMoveCost; break; }
+                                case MovementKind.Difficult: { moveCost = BaseDifficultMoveCost; break; }
 
                                 case MovementKind.Mountains:
                                     {
                                         if (((fromValue >> 1) & 0x7FF) == 0) // only possible in first step
-                                            toValue = (fromValue & 0x7FFFF000) + 0x1000 + (speed << 1);
+                                            toValue = (fromValue & 0x7FFFF000) + 0x1000 + (Speed << 1);
                                         else
                                         {
-                                            toValue = ((fromValue & 0x7FFFF000) + 0x2000 + (speed << 1)) | NewTurn; // must wait for next turn
-                                            if ((options & Options.TerrainResistant) == 0
-                                                && ((fromValue >> 1) & 0x7FF) < speed // movement left
-                                                && (fromTile & 0x800480) == 0 // no city, river or canal
-                                                && (fromTile & 0xF000) != 0x5000 // no base
-                                                && ((fromTile & 0x1F) == 0x06 || (fromTile & 0x3F) == 0x03)) // arctic or desert but not an oasis
+                                            toValue = ((fromValue & 0x7FFFF000) + 0x2000 + (Speed << 1)) | NewTurn; // must wait for next turn
+                                            terrainDamagePerTurn = fromTile.OneTurnHostileDamage;
+                                            if ((MovementOptions & Options.TerrainResistant) == 0
+                                                && ((fromValue >> 1) & 0x7FF) < Speed // movement left
+                                                && terrainDamagePerTurn != 0)
                                             { // add recovery turns for waiting on hostile terrain
-                                                int waitDamage = (Cevo.DamagePerTurnInDesert * (speed - ((fromValue >> 1) & 0x7FF)) - 1) / speed + 1;
+                                                int waitDamage = (terrainDamagePerTurn * (Speed - ((fromValue >> 1) & 0x7FF)) - 1) / Speed + 1;
                                                 toValue += ((waitDamage + 4) >> 3) << 12; // actually: toValue += Math.Round(waitDamage / Cevo.RecoveryOutsideCity) << 12
                                             }
                                         }
-                                        return StepValidity.OK;
+                                        return StepValidity.Ok;
                                     }
                             }
                         }
                         if (distance == 3)
                             moveCost += moveCost >> 1;
                         int damageMovement = 0;
-                        if ((options & Options.TerrainResistant) == 0
-                            && (toTile & 0x800480) == 0 // no city, river or canal
-                            && (toTile & 0xF000) != 0x5000 // no base                                            
-                            && ((toTile & 0x1F) == 0x06 || (toTile & 0x3F) == 0x03)) // arctic or desert but not an oasis
+                        terrainDamagePerTurn = fromTile.OneTurnHostileDamage;
+                        if ((MovementOptions & Options.TerrainResistant) == 0
+                            && terrainDamagePerTurn != 0)
                             damageMovement = moveCost;
 
-                        if (((fromValue >> 1) & 0x7FF) + moveCost <= speed && ((fromValue >> 1) & 0x7FF) < speed)
+                        if (((fromValue >> 1) & 0x7FF) + moveCost <= Speed && ((fromValue >> 1) & 0x7FF) < Speed)
                             toValue = (fromValue & ~NewTurn) + (moveCost << 1);
                         else
                         {
                             toValue = ((fromValue & 0x7FFFF000) + 0x1000 + (moveCost << 1)) | NewTurn; // must wait for next turn
 
-                            if ((options & Options.TerrainResistant) == 0
-                                && (fromTile & 0x800480) == 0 // no city, river or canal
-                                && (fromTile & 0xF000) != 0x5000 // no base                                            
-                                && ((fromTile & 0x1F) == 0x06 || (fromTile & 0x3F) == 0x03)) // arctic or desert but not an oasis
-                                damageMovement += speed - ((fromValue >> 1) & 0x7FF);
+                            if ((MovementOptions & Options.TerrainResistant) == 0
+                                && terrainDamagePerTurn != 0) // arctic or desert but not an oasis
+                                damageMovement += Speed - ((fromValue >> 1) & 0x7FF);
                         }
                         if (damageMovement > 0) // add recovery turns for waiting on hostile terrain and moving in it
                         {
-                            int damage = (Cevo.DamagePerTurnInDesert * damageMovement - 1) / speed + 1;
+                            int damage = (Cevo.DamagePerTurnInDesert * damageMovement - 1) / Speed + 1;
                             toValue += ((damage + 4) >> 3) << 12; // actually: toValue += Math.Round(damage / Cevo.RecoveryOutsideCity) << 12
                         }
 
-                        return StepValidity.OK;
+                        return StepValidity.Ok;
                     }
 
                 case ModelDomain.Sea:
                     {
-                        int toTile = theEmpire.Map.Ground[toLocationID];
-                        if (((toTile & 0x800400) == 0 && (toTile & 0x1E) != 0x00))
-                            return StepValidity.ForbiddenLocation; // no city, no canal, no water
-                        if ((toTile & 0x1F) == 0x00 && (options & Options.Navigation) == 0)
-                            return StepValidity.ForbiddenLocation; // open sea, no navigation
+                        LocationData toTile = TheEmpire.Map.Ground[toLocationID];
+                        if (!toTile.HasCanal && !toTile.IsWater)
+                            return StepValidity.ForbiddenLocation;
+                        if (toTile.Terrain == Terrain.Ocean && (MovementOptions & Options.Navigation) == 0)
+                            return StepValidity.ForbiddenLocation;
 
                         int moveCost = 100;
                         if (distance == 3)
                             moveCost = 150;
-                        if (((fromValue >> 1) & 0x7FF) + moveCost <= speed && ((fromValue >> 1) & 0x7FF) < speed)
+                        if (((fromValue >> 1) & 0x7FF) + moveCost <= Speed && ((fromValue >> 1) & 0x7FF) < Speed)
                             toValue = (fromValue & ~NewTurn) + (moveCost << 1);
                         else
                             toValue = ((fromValue & 0x7FFFF000) + 0x1000 + (moveCost << 1)) | NewTurn; // must wait for next turn
-                        return StepValidity.OK;
+                        return StepValidity.Ok;
                     }
 
                 case ModelDomain.Air:
@@ -565,11 +557,11 @@ namespace CevoAILib
                         int moveCost = 100;
                         if (distance == 3)
                             moveCost = 150;
-                        if (((fromValue >> 1) & 0x7FF) + moveCost <= speed && ((fromValue >> 1) & 0x7FF) < speed)
+                        if (((fromValue >> 1) & 0x7FF) + moveCost <= Speed && ((fromValue >> 1) & 0x7FF) < Speed)
                             toValue = (fromValue & ~NewTurn) + (moveCost << 1);
                         else
                             toValue = ((fromValue & 0x7FFFF000) + 0x1000 + (moveCost << 1)) | NewTurn; // must wait for next turn
-                        return StepValidity.OK;
+                        return StepValidity.Ok;
                     }
             }
         }
