@@ -8,6 +8,7 @@ This is an improved and expanded version of Steffen's AI Template for [C-evo](ht
 - The coordinate system of RC is changed from a/b to x/y. This may or may not matter to you, but if you ever make a new RC from coordinate numbers or check an RC's coordinates, you will need to update those.
 - Location.Neighbors and Location.Distance5Area now return arrays of Location, not OtherLocation. If you need the old behavior, use Location.NeighborsAndOffsets and Location.Distance5AreaAndOffsets.
 - Note that compiling CevoDotNet is necessary to use the template, at least until Steffen updates the official copy.
+- The first time you open the solution, you will need to open NuGet package manager from the Tools menu and click the button to restore missing packages.
 - My use of the new C# tuples language feature requires, at least for now, that System.ValueTuple.dll be available in the C-evo folder. Visual Studio should take care of this for you during development, but you'll have to bundle it with your AI dll for other people to use it.
 
 ### Versioning:
