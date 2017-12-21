@@ -70,7 +70,7 @@ Finally, be aware that the game is complex. It takes some experience as a player
 
 <h2>State of Development</h2>
 <p>
-This is an early version of the template and has not been tested intensively. If you find a bug, please report it to me using <a href="http://steffengerlach.de/contact/">this web form</a>. Thanks!
+I have run a primitive AI using this, and experimented with many of the features I added, but I have not yet comprehensively tested everything. If you find a bug, please report it as an issue on the github project. Thanks!
 </p>
 
 
@@ -142,7 +142,7 @@ To let you work with the template, C-evo must be installed to a folder that you 
 </p>
 
 <p>
-The solution AI.sln is located in the subfolder 'Project'. It contains two projects, 'AI' and 'CevoDotNet'. 'AI' is the actual template for your AI. 'CevoDotNet' is the C-evo .NET loader (identical to the one included as binary). Don't touch this project! It's contained for no other reason than a ridiculous limitation of the Visual C# Express Edition that allows debugging a DLL only if the executable is also part of the solution. If you own a more advanced edition of Visual Studio, you may remove the CevoDotNet project from the solution, if you like.
+The solution AI.sln is located in the subfolder 'Project'. It contains two projects, 'AI' and 'CevoDotNet'. 'AI' is the actual template for your AI. 'CevoDotNet' is the C-evo .NET loader (modified from the one included as binary to use a later .NET version). Don't touch this project!
 </p>
 
 <p>
@@ -162,7 +162,7 @@ Second, there are several files in the subfolder "Lib". These files look mostly 
 </p>
 
 <p>
-The main class is Empire. This class is the entry point to your AI and holds all references. The class must implement all abstract methods of its base class. These are 11 methods, the most important of which is OnTurn, triggering and containing your complete turn.
+The main class is Empire. This class is the entry point to your AI and holds all references. The class must implement all abstract methods of its base class. These are 14 methods, the most important of which is OnTurn, triggering and containing your complete turn.
 </p>
 
 
@@ -214,7 +214,7 @@ Be aware that units and cities might stop to exist. If you're still referring th
 <h2>Identity of Items</h2>
 
 <p>
-You can use == with all refernce types for identity check because there are never two different instances of them meaning the same thing. This includes Unit, Model, ForeignModel, City and ForeignCity. (However, comparing models using == is in that way limited that two independently developed but identic models are still told as being different.)
+You can use == with all reference types for identity check because there are never two different instances of them meaning the same thing. This includes Unit, Model, ForeignModel, City and ForeignCity. (However, comparing models using == is in that way limited that two independently developed but identical models are still told as being different.)
 </p>
 
 <p>
@@ -226,17 +226,17 @@ The other value types from the library can not be checked for identity. This is 
 </p>
 
 
-<h2>ToughSet</h2>
+<h2>Lists</h2>
 
 <p>
-Units, cities and foreign cities are changing sets of objects. These items might not only accumulate (as this is the case for models) but also disappear. To manage them in lists could easily lead to problems, because indices in a list would invite the programmer to use them for identification purpose, which would not work in the long term. So these objects are not managed using lists but in a collection class called ToughSet. That one only provides an enumeration (to use with foreach) but no indices. A second advantage is that this collection can be iterated and thinned out at the same time. For example, when attacking with a transport ship which has some units loaded and <i>losing</i> the battle, this would remove several items from the collection. When this happens while being in an iteration through all units, most collection classes surely had a problem. ToughSet would handle this situation correctly, continue the iteration, not leave out units, not iterate units twice and not iterate units that have already been removed.
+Units, cities and foreign cities are changing sets of objects. These items might not only accumulate (as this is the case for models) but also disappear. These are managed in custom lists that update automatically, and can be indexed by two different kinds of ids. One of these is temporary, and will likely change from one turn to the next. If you want to save an identification of a unit, city, or foreign city, be sure to use the PersistentId. A second advantage is that these collections can be iterated and updated at the same time. For example, when attacking with a transport ship which has some units loaded and <i>losing</i> the battle, this would remove several items from the collection. When this happens while being in an iteration through all units, most collection classes would throw an exception. UnitList would handle this situation correctly, continue the iteration, not leave out units, not iterate units twice and not iterate units that have already been removed.
 </p>
 
 
 <h2>Addressing the Playground</h2>
 
 <p>
-The locations on the map are not addressed by unique, 2-dimensional coordinates (latitude/longitude-like) as you might expect. This would go with 2 difficulties: first a break along a vertical line where the "longitude" did a jump although the locations are adjacent, second the problem of the game's tilt tile grid, which could not easily be matched by integer coordinates.
+The locations on the map are addressed by unique, 2-dimensional coordinates (latitude/longitude-like) as you might expect. However, you should rarely need to consider the actual numbers involved.
 </p>
 
 <p>
@@ -254,7 +254,7 @@ each location tells its Neighbors and Distance5Area
 sprawls, as described in the next section
 </li>
 <li>
-relative coordinates, which are tilt as the grid
+relative coordinates
 </li>
 </ul>
 
@@ -262,18 +262,18 @@ relative coordinates, which are tilt as the grid
 
 <p>
 Relative coordinates always relate to a base tile, which can be chosen freely. Such a coordinate is a pair of
-two components, <i>a</i> and <i>b</i>, which both count the distance to the base tile. The a-component
-steps south-east and the b-component south-west:
+two components, <i>x</i> and <i>y</i>, which both count the distance to the base tile. The x-component
+steps east and the y-component south:
 </p>
 
-<img src="_aidev3.gif" />
+<img src="_aidev2.gif" />
 
 <p>
 The base tile always has the coordinate (0,0).
 </p>
 
 <p>
-Relative coordinates have a <i>distance</i> property which is similar to that of polar coordinates. It combines a and b component to tell the distance regardless of the direction. The distance is counted by stepping single tiles with the least possible result, where a short step (along a or b axis) counts 2 and a long step (north-south or east-west) counts 3. E.g. the tiles in the radius of a city are those with a distance of 5 or less to the city tile.
+Note that relative coordinates are only valid if (dx+dy)&1 == 0. Relative coordinates have a <i>distance</i> property which is similar to that of polar coordinates. It combines x and y component to tell the distance regardless of the direction. The distance is counted by stepping single tiles with the least possible result, where a short step (along a diagonal) counts 2 and a long step (north-south or east-west) counts 3. E.g. the tiles in the radius of a city are those with a distance of 5 or less to the city tile.
 </p>
 
 <p>
@@ -306,7 +306,7 @@ Examples:
 (location1 - location2).Distance &lt;= 10 -- whether two location are within a distance of 10
 </li>
 <li>
-location + new RC(1,-1) -- the east neighbor location
+location + new RC(2,0) -- the east neighbor location
 </li>
 </ul>
 
@@ -588,64 +588,100 @@ The easiest way to implement Empire.Persistent is a fixed memory structure using
 If the structure of the backup/restore memory changes, the AI will become incompatible to earlier saved games. If you wish to avoid that, you have to implement conversion algos, and one piece of information in the memory then should be a version number that lets you tell when and how to convert the structure.
 </p>
 
+<h2>APersistentDictionary, etc.</h2>
 
- <h2>Startup</h2>
-
- <p>
- You should have an idea of the sequence of events in the beginning of a game.
- </p>
-
- <p>
- When a <i>new</i> game is started, the sequence is as follows:
+<p>
+If you absolutely cannot fit the data you need for your AI into the Status fields and Empire.Persistent's fixed 4k, there are additional options. Three abstract classes, <i>APersistentDictionary</i>, <i>APersistentList</i>, and <i>APersistentSet</i> provide most of the implementation required to store any arbitrary amount of data in the save game in the form of an <i>IDictionaory</i>, <i>IList</i>, or <i>ISet</i>.
 </p>
 
- <ol>
- <li>
- world, nations, capitals and initial units are created by the game core
- </li>
- <li>
- constructors Empire() and Persistent() are called
- </li>
- <li>
- begin of Status and Empire.Persistent change tracking
- </li>
- <li>
- some other nations might do their first turn
- </li>
- <li>
- Empire.NewGame() is called
- </li>
- <li>
- first On-Method is called (usually OnTurn)
- </li>
- </ol>
+<p>
+One example of how to do this is included in the template, a dictionary that stores old spy reports on foreign cities. To use these classes, you must create a subclass, implementing the abstract property <i>ClassId</i> and the abstract methods to convert your data to and from arrays of <i>int</i>. The value of <i>ClassId</i> must be fixed for the class and must be unique to each specific class.
+</p>
 
- <p>
+<p>
+In addition to implementing the abstract methods and property, you must copy each of the static methods of the example <i>SpyReports</i> class into your class, substituting your class's name where appropriate. When you have done that, add your class's id to the <i>AEmpire.HandlePersistenceCommand</i> method's implementation, redirecting the command to your class's <i>Handle</i> method. Once this is done, your class will be ready to use.
+</p>
+
+<p>
+Some final notes on this:
+<ul>
+<li>
+Do not create instances of your class anywhere in the Empire or Persistent constructors. That should be done in <i>NewGame()</i> at the earliest.
+</li>
+<li>
+Any instance that you create in <i>NewGame()</i>, you should retrieve (and not create) in <i>Resume()</i>. The reload process will have taken care of re-creating it for you when the game is reloaded.
+</li>
+<li>
+You can create additional instances at any time later, and they will again be recreated and restored for you automatically on reload. You should use a readily available identifier, or perhaps store them as the values in yet another persistent collection, to retrieve them again.
+</li>
+<li>
+The conversion from an <i>int</i> array to your data types should not require using any game data. Ideally, the input array should contain ALL of the needed information. Some pieces of game data may not be fully up to date at the time that conversion is done during reload.
+</li>
+<li>
+The instance id numbers you use MUST be unique, at least within each class. You can have one <i>SpyReports</i> with id 1 and separately a <i>PastConversations</i> (or whatever) instance with id 1, but making two <i>SpyReports</i> with id 1 is an error.
+</li>
+<li>
+The amount of space these classes take up in the save game is proportional to how many times you change their contents, as well as how large the data they contain is. Try to minimize how much you change them to avoid excessively bloating savefile size.
+</li>
+</ul>
+
+<h2>Startup</h2>
+
+<p>
+You should have an idea of the sequence of events in the beginning of a game.
+</p>
+
+<p>
+When a <i>new</i> game is started, the sequence is as follows:
+</p>
+
+<ol>
+<li>
+world, nations, capitals and initial units are created by the game core
+</li>
+<li>
+constructors Empire() and Persistent() are called
+</li>
+<li>
+begin of Status and Empire.Persistent change tracking
+</li>
+<li>
+some other nations might do their first turn
+</li>
+<li>
+Empire.NewGame() is called
+</li>
+<li>
+first On-Method is called (usually OnTurn)
+</li>
+</ol>
+
+<p>
 In contrast, when a <i>saved</i> game is loaded, the sequence looks like this:
 </p>
 
 <ol>
 <li>
- world, nations, capitals and initial units are created by the game core (exactly as when played originally)
- </li>
+world, nations, capitals and initial units are created by the game core (exactly as when played originally)
+</li>
 <li>
- constructors Empire() and Persistent() are called
- </li>
- <li>
- The game is core-internally being replayed up to the turn where it should be continued. This happens based on the commands recorded during the original playing, AI is not involved here. This process also includes incremental update of Status values and Empire.Persistent. When the loading ist done, they have the same content as they originally had in the turn where the game continues now.
- </li>
+constructors Empire() and Persistent() are called
+</li>
+<li>
+The game is core-internally being replayed up to the turn where it should be continued. This happens based on the commands recorded during the original playing, AI is not involved here. This process also includes incremental update of Status values, Empire.Persistent, and any persistent collections. When the loading is done, they have the same content as they originally had in the turn where the game continues now.
+</li>
 <li>
 some other nations might do their first turn after loading
 </li>
 <li>
- Empire.Resume() is called
- </li>
- <li>
- first On-Method is called (e.g. OnForeignMove or OnChanceToNegotiate)
- </li>
- </ol>
+Empire.Resume() is called
+</li>
+<li>
+first On-Method is called (e.g. OnForeignMove or OnChanceToNegotiate)
+</li>
+</ol>
 
- <p>
+<p>
 So the appropriate behavior of the AI is the following:
 </p>
 
