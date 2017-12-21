@@ -18,5 +18,9 @@ namespace AI
             : base (empire, id)
         {
         }
+
+        public CitySpyReport LatestSpyReport => IsSpiedOut && GetSpyReport(out CitySpyReport report).OK ? report
+            : TheEmpire.Persistent.OldSpyReports.TryGetValue(PersistentId, out report) ? report
+            : null;
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using CevoAILib;
 using CevoAILib.Diplomacy;
 
@@ -16,10 +17,12 @@ namespace AI
 
         protected override void NewGame()
         {
+            Persistent.NewGame();
         }
 
         protected override void Resume()
         {
+            Persistent.Resume();
         }
 
         protected override void OnTurn()
@@ -68,6 +71,17 @@ namespace AI
                 Location[] neighborLocations = unit.Location.Neighbors;
                 if (neighborLocations.Length > 0)
                     unit.MoveTo__Turn(neighborLocations[random.Next(neighborLocations.Length)]); // move unit to random adjacent location
+            }
+
+            // update saved city spy reports
+            foreach (ForeignCity foreignCity in ForeignCities)
+            {
+                if (foreignCity.IsSpiedOut)
+                {
+                    PlayResult result = foreignCity.GetSpyReport(out CitySpyReport report);
+                    Debug.Assert(result.OK);
+                    Persistent.OldSpyReports[foreignCity.PersistentId] = report;
+                }
             }
         }
 
@@ -119,6 +133,11 @@ namespace AI
 
         protected override void OnBeforeForeignCapture(Nation nation, ICity city)
         {
+            if (city.Nation == Us)
+            {
+                City myCity = Cities[city.PersistentId];
+                Persistent.OldSpyReports[myCity.PersistentId] = myCity.ToSpyReport();
+            }
         }
 
         protected override void OnAfterForeignCapture()

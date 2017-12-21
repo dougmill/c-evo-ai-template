@@ -260,6 +260,9 @@ namespace CevoAILib
                 aiNames[id] = new string(name);
             }
 
+            Accumulator = new Accumulator(this);
+            Chunkinizer = new Chunkinizer(this);
+
             // UGLY hack - there is no server command to ask what version of the game an AI was written for, or the
             // consequences on what game rules it follows. So, here's some unsanctioned poking around in server memory
             // to find it. But first, check that the version running is the one we expect.
@@ -611,11 +614,38 @@ namespace CevoAILib
         /// <summary>
         /// INTERNAL - only call from CevoAILib classes!
         /// </summary>
+        public void PersistData(int finishingCommand, int[] finishingData, int[][] data)
+        {
+            Chunkinizer.StoreAsChunks(finishingCommand, finishingData, data);
+        }
+
+        /// <summary>
+        /// INTERNAL - only call from CevoAILib classes!
+        /// </summary>
         public void InvalidateAllCityReports() { foreach (City city in Cities) city.InvalidateReport(); }
 
         public delegate void StartOfTurnOrResumeHandler();
         public event StartOfTurnOrResumeHandler OnStartOfTurnOrResume;
 
+        private readonly Accumulator Accumulator;
+        private readonly Chunkinizer Chunkinizer;
+
+        private void HandlePersistenceCommand(int baseCommand, int classId, int instanceId, int index, int[][] data)
+        {
+            switch (classId)
+            {
+                case Persistent.SpyReports.Id:
+                    Persistent.SpyReports.Handle(this, baseCommand, instanceId, data);
+                    break;
+
+                default:
+                    throw new Exception($"Persistence class id {classId} not handled.");
+            }
+        }
+
+        private static bool MatchesDataCommand(int commandToCheck, int dataCommandToCompareTo) =>
+            commandToCheck >= dataCommandToCompareTo &&
+            commandToCheck <= (dataCommandToCompareTo | Protocol.cDataSizeMask);
 
         /// <summary>
         /// INTERNAL - only call from Plugin class!
@@ -623,6 +653,49 @@ namespace CevoAILib
         public void Process(int command, IntPtr dataPtr)
         {
             int* data = (int*) dataPtr;
+            if (command >= Protocol.cClientEx)
+            {
+                switch (command)
+                {
+                    case Protocol.cExStoreDataChunk:
+                        Accumulator.AddChunk(data);
+                        break;
+
+                    case Protocol.cExCollectionCreate:
+                    case Protocol.cExCollectionClear:
+                    case Protocol.cExCollectionDelete:
+                        HandlePersistenceCommand(command, data[0], data[1], 0, null);
+                        break;
+                    case Protocol.cExListRemoveAt:
+                        HandlePersistenceCommand(command, data[0], data[1], data[2], null);
+                        break;
+
+                    case int c when MatchesDataCommand(c, Protocol.cExDictRemoveItem)
+                                 || MatchesDataCommand(c, Protocol.cExDictRemoveKey)
+                                 || MatchesDataCommand(c, Protocol.cExDictAddItem)
+                                 || MatchesDataCommand(c, Protocol.cExListAdd)
+                                 || MatchesDataCommand(c, Protocol.cExListRemove)
+                                 || MatchesDataCommand(c, Protocol.cExSetAdd)
+                                 || MatchesDataCommand(c, Protocol.cExSetRemove):
+                        (int[][] combinedData, int[] ids) = Accumulator.Finish(c, 2, data);
+                        HandlePersistenceCommand(command & ~Protocol.cDataSizeMask, ids[0], ids[1], 0, combinedData);
+                        break;
+
+                    case int c when MatchesDataCommand(c, Protocol.cExListInsert)
+                                 || MatchesDataCommand(c, Protocol.cExListSet):
+                        (combinedData, ids) = Accumulator.Finish(c, 3, data);
+                        HandlePersistenceCommand(command & ~Protocol.cDataSizeMask, ids[0], ids[1], ids[2], combinedData);
+                        break;
+
+                    default:
+                        throw new Exception($"cClientEx command {command:X} not handled.");
+                }
+                // Client extension commands are sent during reload as well as in play. Return before the "first-time
+                // call" check so that calling Resume() will properly wait for loading to finish and the first *after*
+                // loading command.
+                return;
+            }
+
             if (!Called)
             {
                 if (IsNewGame)
