@@ -63,37 +63,22 @@ namespace CevoAILib
 
     struct PlayResult
     {
-        readonly int code;
+        readonly int Code;
 
-        public PlayResult(int code) { this.code = code; }
-        public PlayResult(PlayError error) { this.code = (int)error & 0xFFFF; }
+        public PlayResult(int code) => Code = code;
+        public PlayResult(PlayError error) => Code = (int) error & 0xFFFF;
 
-        public override string ToString()
-        {
-            if ((code & Protocol.rExecuted) != 0)
-                return "OK";
-            else
-                return string.Format("{0}", Error);
-        }
+        public override string ToString() => (Code & Protocol.rExecuted) != 0 ? "OK" : Error.ToString();
 
-        public PlayError Error
-        {
-            get
-            {
-                if (OK)
-                    return PlayError.None;
-                else
-                    return (PlayError)(code & 0xFFFF);
-            }
-        }
+        public PlayError Error => OK ? PlayError.None : (PlayError) (Code & 0xFFFF);
 
-        public bool OK { get { return (code & Protocol.rExecuted) != 0; } }
-        public bool Effective { get { return (code & Protocol.rEffective) != 0; } }
-        public bool UnitRemoved { get { return (code & Protocol.rUnitRemoved) != 0; } }
-        public bool EnemyDestroyed { get { return OK && (code & 0xFFFF) == Protocol.eEnemyDestroyed; } }
-        public bool NewUnitOrCitySpotted { get { return (code & Protocol.rEnemySpotted) != 0; } }
+        public bool OK => (Code & Protocol.rExecuted) != 0;
+        public bool Effective => (Code & Protocol.rEffective) != 0;
+        public bool UnitRemoved => (Code & Protocol.rUnitRemoved) != 0;
+        public bool EnemyDestroyed => OK && (Code & 0xFFFF) == Protocol.eEnemyDestroyed;
+        public bool NewUnitOrCitySpotted => (Code & Protocol.rEnemySpotted) != 0;
 
-        public static PlayResult Success { get { return new PlayResult(Protocol.rExecuted | Protocol.rEffective); } }
-        public static PlayResult NoChange { get { return new PlayResult(Protocol.rExecuted); } }
+        public static PlayResult Success => new PlayResult(Protocol.rExecuted | Protocol.rEffective);
+        public static PlayResult NoChange => new PlayResult(Protocol.rExecuted);
     }
 }
