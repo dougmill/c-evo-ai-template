@@ -6,7 +6,7 @@ namespace AI
 {
     sealed class City : ACity
     {
-        public City(AEmpire empire, CityId id)
+        public City(Empire empire, CityId id)
             : base(empire, id)
         {
         }
@@ -14,7 +14,7 @@ namespace AI
 
     sealed class ForeignCity : AForeignCity
     {
-        public ForeignCity(AEmpire empire, ForeignCityId id)
+        public ForeignCity(Empire empire, ForeignCityId id)
             : base (empire, id)
         {
         }

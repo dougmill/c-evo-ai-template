@@ -6,7 +6,7 @@ namespace AI
 {
     sealed class Unit : AUnit
     {
-        public Unit(AEmpire empire, UnitId id)
+        public Unit(Empire empire, UnitId id)
             : base(empire, id)
         {
         }

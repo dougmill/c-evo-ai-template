@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using AI;
 using CevoAILib;
 
 namespace CevoAILib
@@ -144,14 +145,14 @@ namespace CevoAILib
     /// <typeparam name="T">The implementing subclass.</typeparam>
     abstract unsafe class APersistentDictionary<K, V, T> : IDictionary<K, V> where T : APersistentDictionary<K, V, T>
     {
-        protected static readonly IDictionary<AEmpire, IDictionary<int, T>> Index =
-            new Dictionary<AEmpire, IDictionary<int, T>>();
+        protected static readonly IDictionary<Empire, IDictionary<int, T>> Index =
+            new Dictionary<Empire, IDictionary<int, T>>();
 
-        protected readonly AEmpire TheEmpire;
+        protected readonly Empire TheEmpire;
         private readonly int Id;
         private readonly IDictionary<K, V> WrappedDictionary;
         
-        protected APersistentDictionary(AEmpire empire, int id)
+        protected APersistentDictionary(Empire empire, int id)
         {
             TheEmpire = empire;
             Id = id;
@@ -272,14 +273,14 @@ namespace CevoAILib
     /// <typeparam name="T">The implementing subclass.</typeparam>
     abstract unsafe class APersistentList<V, T> : IList<V> where T : APersistentList<V, T>
     {
-        protected static readonly IDictionary<AEmpire, IDictionary<int, T>> Index =
-            new Dictionary<AEmpire, IDictionary<int, T>>();
+        protected static readonly IDictionary<Empire, IDictionary<int, T>> Index =
+            new Dictionary<Empire, IDictionary<int, T>>();
 
-        protected readonly AEmpire TheEmpire;
+        protected readonly Empire TheEmpire;
         private readonly int Id;
         private readonly IList<V> WrappedList;
 
-        protected APersistentList(AEmpire empire, int id)
+        protected APersistentList(Empire empire, int id)
         {
             TheEmpire = empire;
             Id = id;
@@ -389,14 +390,14 @@ namespace CevoAILib
     /// <typeparam name="T">The implementing subclass.</typeparam>
     abstract unsafe class APersistentSet<V, T> : ISet<V> where T : APersistentSet<V, T>
     {
-        protected static readonly IDictionary<AEmpire, IDictionary<int, T>> Index =
-            new Dictionary<AEmpire, IDictionary<int, T>>();
+        protected static readonly IDictionary<Empire, IDictionary<int, T>> Index =
+            new Dictionary<Empire, IDictionary<int, T>>();
 
-        protected readonly AEmpire TheEmpire;
+        protected readonly Empire TheEmpire;
         private readonly int Id;
         private readonly ISet<V> WrappedSet;
 
-        protected APersistentSet(AEmpire empire, int id)
+        protected APersistentSet(Empire empire, int id)
         {
             TheEmpire = empire;
             Id = id;

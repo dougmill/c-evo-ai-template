@@ -34,11 +34,11 @@ namespace AI
         {
             public const int Id = 1;
 
-            private SpyReports(AEmpire empire, int id) : base(empire, id) { }
+            private SpyReports(Empire empire, int id) : base(empire, id) { }
 
-            public static SpyReports Get(AEmpire empire, int id) => Index[empire][id];
+            public static SpyReports Get(Empire empire, int id) => Index[empire][id];
 
-            public static void Create(AEmpire empire, int id)
+            public static void Create(Empire empire, int id)
             {
                 fixed (int* data = new[] {Id, id})
                 {
@@ -46,7 +46,7 @@ namespace AI
                 }
             }
 
-            public static SpyReports GetOrCreate(AEmpire empire, int id)
+            public static SpyReports GetOrCreate(Empire empire, int id)
             {
                 if (Index.TryGetValue(empire, out IDictionary<int, SpyReports> dict)
                     && dict.TryGetValue(id, out SpyReports reports))
@@ -55,7 +55,7 @@ namespace AI
                 return Get(empire, id);
             }
 
-            public static void Handle(AEmpire empire, int baseCommand, int instanceId, int[][] data)
+            public static void Handle(Empire empire, int baseCommand, int instanceId, int[][] data)
             {
                 switch (baseCommand)
                 {

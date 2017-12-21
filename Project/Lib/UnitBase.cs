@@ -99,7 +99,7 @@ namespace CevoAILib
                 if (oldIdLookup.TryGetValue(UnitsPtr[unitId]->PersistentId, out Unit unit))
                     unit.UpdateId(unitId);
                 else
-                    unit = new Unit(TheEmpire, unitId);
+                    unit = new Unit((Empire) TheEmpire, unitId);
                 UnitObjects.Add(unit);
                 IdLookup[unit.PersistentId] = unit;
             }
@@ -135,12 +135,12 @@ namespace CevoAILib
                 return unit.Model.Speed;
         }
 
-        protected readonly AEmpire TheEmpire;
+        protected readonly Empire TheEmpire;
         public UnitId Id;
         private UnitData* Data;
         private readonly PersistentUnitId CachedPersistentId;
 
-        protected AUnit(AEmpire empire, UnitId id)
+        protected AUnit(Empire empire, UnitId id)
         {
             TheEmpire = empire;
             Id = id;

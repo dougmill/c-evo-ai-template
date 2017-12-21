@@ -6,7 +6,7 @@ namespace AI
 {
     sealed unsafe class Model : AModel
     {
-        public Model(AEmpire empire, ModelId id, ModelData* data)
+        public Model(Empire empire, ModelId id, ModelData* data)
             : base(empire, id, data)
         {
         }
@@ -14,7 +14,7 @@ namespace AI
 
     sealed unsafe class ForeignModel : AForeignModel
     {
-        public ForeignModel(AEmpire empire, ForeignModelId id, ForeignModelData* data)
+        public ForeignModel(Empire empire, ForeignModelId id, ForeignModelData* data)
             : base(empire, id, data)
         {
         }

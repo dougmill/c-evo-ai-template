@@ -111,7 +111,7 @@ namespace CevoAILib
             }
             else
             {
-                city = new City(TheEmpire, cityId);
+                city = new City((Empire) TheEmpire, cityId);
                 ObjectsCache[city.PersistentId] = city;
             }
             CityObjects.Add(city);
@@ -261,12 +261,12 @@ namespace CevoAILib
     /// </summary>
     abstract unsafe class ACity : ICitySpyReport
     {
-        protected readonly AEmpire TheEmpire;
+        protected readonly Empire TheEmpire;
         public CityId Id { get; private set; }
         private CityData* Data;
         private readonly PersistentCityId CachedPersistentId;
 
-        protected ACity(AEmpire empire, CityId id)
+        protected ACity(Empire empire, CityId id)
         {
             TheEmpire = empire;
             Id = id;
@@ -731,7 +731,7 @@ namespace CevoAILib
             }
             else
             {
-                city = new ForeignCity(TheEmpire, cityId);
+                city = new ForeignCity((Empire) TheEmpire, cityId);
                 ObjectsCache[city.PersistentId] = city;
             }
             CityObjects.Add(city);
@@ -754,12 +754,12 @@ namespace CevoAILib
     /// </summary>
     abstract unsafe class AForeignCity : ICity
     {
-        protected readonly AEmpire TheEmpire;
+        protected readonly Empire TheEmpire;
         public ForeignCityId Id { get; private set; }
         private ForeignCityData* Data;
         private readonly PersistentCityId CachedPersistentId;
 
-        protected AForeignCity(AEmpire empire, ForeignCityId id)
+        protected AForeignCity(Empire empire, ForeignCityId id)
         {
             TheEmpire = empire;
             Id = id;

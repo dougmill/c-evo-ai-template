@@ -38,7 +38,7 @@ namespace CevoAILib
             var firstNewId = new ModelId((short) Models.Count);
             var lastNewId = new ModelId((short) (Count - 1));
             foreach (ModelId modelId in ModelId.Range(firstNewId, lastNewId))
-                Models.Add(new Model(TheEmpire, modelId, ModelsPtr[modelId]));
+                Models.Add(new Model((Empire) TheEmpire, modelId, ModelsPtr[modelId]));
         }
 
         public IEnumerator<Model> GetEnumerator()
@@ -126,18 +126,18 @@ namespace CevoAILib
     /// </summary>
     abstract unsafe class AModel : ModelBase
     {
-        protected readonly AEmpire TheEmpire;
+        protected readonly Empire TheEmpire;
         public readonly ModelId Id;
         protected readonly ModelData* Data;
 
-        protected AModel(AEmpire empire, ModelId id, ModelData* data)
+        protected AModel(Empire empire, ModelId id, ModelData* data)
         {
             TheEmpire = empire;
             Id = id;
             Data = data;
         }
 
-        protected AModel(AEmpire empire) // for Blueprint only
+        protected AModel(Empire empire) // for Blueprint only
         {
             TheEmpire = empire;
             Id = new ModelId(-1);
@@ -231,7 +231,7 @@ namespace CevoAILib
             var firstNewId = new ForeignModelId((short) Models.Count);
             var lastNewId = new ForeignModelId((short) (Count - 1));
             foreach (ForeignModelId modelId in ForeignModelId.Range(firstNewId, lastNewId))
-                Models.Add(new ForeignModel(TheEmpire, modelId, ModelsPtr[modelId]));
+                Models.Add(new ForeignModel((Empire) TheEmpire, modelId, ModelsPtr[modelId]));
         }
 
         public IEnumerator<ForeignModel> GetEnumerator()
@@ -249,11 +249,11 @@ namespace CevoAILib
     /// </summary>
     abstract unsafe class AForeignModel : ModelBase
     {
-        protected readonly AEmpire TheEmpire;
+        protected readonly Empire TheEmpire;
         public readonly ForeignModelId Id;
         protected readonly ForeignModelData* Data;
 
-        protected AForeignModel(AEmpire empire, ForeignModelId id, ForeignModelData* data)
+        protected AForeignModel(Empire empire, ForeignModelId id, ForeignModelData* data)
         {
             TheEmpire = empire;
             Id = id;
@@ -311,7 +311,7 @@ namespace CevoAILib
     /// </summary>
     unsafe class Blueprint : AModel
     {
-        public Blueprint(AEmpire empire)
+        public Blueprint(Empire empire)
             : base(empire)
         {
         }

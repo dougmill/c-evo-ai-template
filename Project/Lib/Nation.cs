@@ -248,7 +248,7 @@ namespace CevoAILib
             Cities = new CityList(this);
             ForeignCities = new ForeignCityList(this);
             Blueprint = new Blueprint((Empire) this);
-            BattleHistory = new BattlesHistory(this, &(Data->BattleHistoryData));
+            BattleHistory = new BattleHistory(this, &(Data->BattleHistoryData));
             Persistent = new Persistent((Empire) this, Data->CustomData);
 
             var aiNames = new IdIndexedArray<NationId, string>(Cevo.MaxNumberOfNations);
@@ -373,7 +373,7 @@ namespace CevoAILib
         public int IncomeFromOracle => Data->OracleIncome;
         public bool CanSetResearch__Turn(Advance advance) => TestPlay(Protocol.sSetResearch, (int)advance).OK;
         public RelationDetails RelationDetailsTo(Nation nation) => new RelationDetails(this, nation);
-        public BattlesHistory BattleHistory { get; }
+        public BattleHistory BattleHistory { get; }
 
         /// <summary>
         /// number of nations that are still in the game
@@ -636,7 +636,7 @@ namespace CevoAILib
             switch (classId)
             {
                 case Persistent.SpyReports.Id:
-                    Persistent.SpyReports.Handle(this, baseCommand, instanceId, data);
+                    Persistent.SpyReports.Handle((Empire) this, baseCommand, instanceId, data);
                     break;
 
                 default:
@@ -1123,12 +1123,12 @@ namespace CevoAILib
         public override string ToString() => Data->ToString();
     }
 
-    unsafe class BattlesHistory : IReadOnlyList<BattleRecord>
+    unsafe class BattleHistory : IReadOnlyList<BattleRecord>
     {
         private readonly AEmpire TheEmpire;
         private readonly BattleHistoryData* Data;
 
-        public BattlesHistory(AEmpire empire, BattleHistoryData* data)
+        public BattleHistory(AEmpire empire, BattleHistoryData* data)
         {
             TheEmpire = empire;
             Data = data;
