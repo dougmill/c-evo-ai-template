@@ -6,8 +6,8 @@ namespace AI
 {
     sealed class Unit : AUnit
     {
-        public Unit(Empire empire, int indexInSharedMemory)
-            : base(empire, indexInSharedMemory)
+        public Unit(AEmpire empire, UnitId id)
+            : base(empire, id)
         {
         }
     }
