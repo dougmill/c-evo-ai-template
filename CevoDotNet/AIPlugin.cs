@@ -19,7 +19,7 @@ namespace Loader
                 Type type = null;
                 if (!typeCache.TryGetValue(assemblyPath, out type))
                 {
-                    Assembly assembly = Assembly.LoadFile(assemblyPath);
+                    Assembly assembly = Assembly.UnsafeLoadFrom(assemblyPath);
                     type = assembly.GetType("AI.Plugin");
                     typeCache[assemblyPath] = type;
                 }
