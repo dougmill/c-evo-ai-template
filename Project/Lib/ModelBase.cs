@@ -1,31 +1,54 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using AI;
 
 namespace CevoAILib
 {
-    struct Stage
+    unsafe class ModelList : IReadableIdIndexedArray<ModelId, Model>
     {
-        public readonly int MaximumWeight;
-        public readonly int StrengthMultiplier;
-        public readonly int TransportMultiplier;
-        public readonly int CostMultiplier;
-        readonly int upgradeArray;
-        bool ContainsUpgrade(int upgrade) { return (upgradeArray & (1 << upgrade)) != 0; }
+        private readonly EmpireData* EmpirePtr;
+        private readonly ModelData.Ptr ModelsPtr;
+        private readonly AEmpire TheEmpire;
+        private readonly IdIndexedList<ModelId, Model> Models = new IdIndexedList<ModelId, Model>();
 
-        public Stage(int maximumWeight, int strengthMultiplier, int transportMultiplier, int costMultiplier, int upgradeArray)
+        public ModelList(AEmpire theEmpire)
         {
-            this.MaximumWeight = maximumWeight;
-            this.StrengthMultiplier = strengthMultiplier;
-            this.TransportMultiplier = transportMultiplier;
-            this.CostMultiplier = costMultiplier;
-            this.upgradeArray = upgradeArray;
+            TheEmpire = theEmpire;
+            EmpirePtr = theEmpire.Data;
+            ModelsPtr = EmpirePtr->ModelsData;
         }
 
-        public override string ToString()
+        public int Count => EmpirePtr->NumModels;
+
+        public Model this[ModelId id]
         {
-            return string.Format("x{0}", StrengthMultiplier);
+            get
+            {
+                if (Models.Count < Count)
+                    Update();
+                return Models[id];
+            }
         }
+
+        private void Update()
+        {
+            var firstNewId = new ModelId((short) Models.Count);
+            var lastNewId = new ModelId((short) (Count - 1));
+            foreach (ModelId modelId in ModelId.Range(firstNewId, lastNewId))
+                Models.Add(new Model(TheEmpire, modelId, ModelsPtr[modelId]));
+        }
+
+        public IEnumerator<Model> GetEnumerator()
+        {
+            if (Models.Count < Count)
+                Update();
+            return Models.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
     /// <summary>
@@ -34,8 +57,7 @@ namespace CevoAILib
     abstract class ModelBase
     {
         #region abstract
-        public abstract int ID { get; }
-        public abstract ModelKind Kind { get; }
+        public abstract GlobalModelId GlobalId { get; }
         public abstract Nation Nation { get; }
         public abstract ModelDomain Domain { get; }
         public abstract int Attack { get; }
@@ -48,48 +70,39 @@ namespace CevoAILib
         public abstract int Fuel { get; }
         public abstract int Weight { get; }
         public abstract bool HasFeature(ModelProperty feature);
+        public abstract bool HasZoC { get; }
+        public abstract bool IsCivil { get; }
+        protected abstract ModelKind KindOnServer { get; }
         #endregion
+
+        public ModelKind Kind => KindOnServer == ModelKind.Settlers && Speed > 150 ? ModelKind.Engineers : KindOnServer;
 
         /// <summary>
         /// whether model has 2 tiles observation range (distance 5) instead of adjacent locations only
         /// </summary>
-        public bool HasExtendedObservationRange
-        {
-            get
-            {
-                return (Kind == ModelKind.SpecialCommando ||
-                    Domain == ModelDomain.Air ||
-                    HasFeature(ModelProperty.RadarSonar) ||
-                    HasFeature(ModelProperty.AcademyTraining) ||
-                    CarrierCapacity > 0);
-            }
-        }
+        public bool HasExtendedObservationRange => KindOnServer == ModelKind.SpecialCommando ||
+                                                   Domain == ModelDomain.Air ||
+                                                   HasFeature(ModelProperty.RadarSonar) ||
+                                                   HasFeature(ModelProperty.AcademyTraining) ||
+                                                   CarrierCapacity > 0;
 
-        public bool HasZoC { get { return Domain == ModelDomain.Ground && Kind != ModelKind.SpecialCommando; } }
-
-        public bool IsCivil { get { return Attack + AttackPlusWithBombs == 0 || Kind == ModelKind.SpecialCommando; } }
+        public bool CanInvestigateLocations => KindOnServer == ModelKind.SpecialCommando || HasFeature(ModelProperty.SpyPlane);
 
         /// <summary>
         /// whether units of this model are capable of doing settler jobs
         /// </summary>
-        public bool CanDoJobs { get { return Kind == ModelKind.Settlers || Kind == ModelKind.Engineers || Kind == ModelKind.Slaves; } }
+        public bool CanDoJobs => KindOnServer == ModelKind.Settlers || KindOnServer == ModelKind.Slaves;
 
-        public bool CanCaptureCity { get { return Domain == ModelDomain.Ground && !IsCivil; } }
+        public bool CanCaptureCity => Domain == ModelDomain.Ground && !IsCivil;
 
-        public bool CanBombardCity
-        {
-            get
-            {
-                return Attack + AttackPlusWithBombs > 0 &&
-                    ((Domain == ModelDomain.Sea && HasFeature(ModelProperty.Artillery)) ||
-                    Domain == ModelDomain.Air);
-            }
-        }
+        public bool CanBombardCity => Attack + AttackPlusWithBombs > 0 &&
+                                      ((Domain == ModelDomain.Sea && HasFeature(ModelProperty.Artillery)) ||
+                                       Domain == ModelDomain.Air);
 
         /// <summary>
         /// whether units of this model pass hostile terrain without damage
         /// </summary>
-        public bool IsTerrainResistant { get { return Domain != ModelDomain.Ground || Kind == ModelKind.Engineers; } }
+        public bool IsTerrainResistant => Domain != ModelDomain.Ground || Kind == ModelKind.Engineers;
 
         /// <summary>
         /// By which value the size of a city grows when a unit of this model is added to it. 0 if adding to a city is not possible.
@@ -98,7 +111,7 @@ namespace CevoAILib
         {
             get
             {
-                switch (Kind)
+                switch (KindOnServer)
                 {
                     case ModelKind.Settlers: return 2;
                     case ModelKind.Slaves: return 1;
@@ -111,212 +124,185 @@ namespace CevoAILib
     /// <summary>
     /// own model, abstract base class
     /// </summary>
-    unsafe abstract class AModel : ModelBase
+    abstract unsafe class AModel : ModelBase
     {
-        protected readonly Empire theEmpire;
+        protected readonly AEmpire TheEmpire;
+        public readonly ModelId Id;
+        private readonly ModelData* Data;
 
-        public AModel(Empire empire, int indexInSharedMemory)
+        protected AModel(AEmpire empire, ModelId id, ModelData* data)
         {
-            this.theEmpire = empire;
-            this.IndexInSharedMemory = indexInSharedMemory;
-            address = (int*)theEmpire.address[6] + ROReadPoint.SizeOfModel * indexInSharedMemory;
+            TheEmpire = empire;
+            Id = id;
+            Data = data;
         }
 
-        protected AModel(Empire empire) // for Blueprint only
+        protected AModel(AEmpire empire) // for Blueprint only
         {
-            this.theEmpire = empire;
-            this.IndexInSharedMemory = -1;
-            address = theEmpire.address + ROReadPoint.TestFlags + 19;
+            TheEmpire = empire;
+            Id = new ModelId(-1);
+            Data = &TheEmpire.Data->ResearchingModel;
         }
 
-        public override string ToString()
-        {
-            if (Kind == ModelKind.OwnDesign || Kind == ModelKind.ForeignDesign)
-                return string.Format("Model{0}.{1}({2}/{3}/{4})", (address[2] >> 12) & 0xF, address[2] & 0xFFF, Attack, Defense, Speed);
-            else
-                return string.Format("{0}", Kind);
-        }
+        public override string ToString() => Kind == ModelKind.OwnDesign || Kind == ModelKind.ForeignDesign
+            ? $"Model{GlobalId.Developer}.{GlobalId.SerialNumber}({Attack}/{Defense}/{Speed})"
+            : $"{Kind}";
 
-        byte* capacity { get { return (byte*)(address + 10); } }
-
-        #region IModel Members
+        #region ModelBase Members
         /// <summary>
         /// unique model ID
         /// </summary>
-        public override int ID { get { return (address[2] & 0xFFFF); } }
+        public override GlobalModelId GlobalId => Data->GlobalId;
+        public override Nation Nation => TheEmpire.Us;
+        public override ModelDomain Domain => Data->Domain;
+        public override int Attack => Data->Attack;
+        public override int AttackPlusWithBombs => Data->Features[ModelProperty.Bombs] * Data->StrengthMultiplier * 2;
+        public override int Defense => Data->Defense;
+        public override int Speed => Data->Speed;
+        public override int Cost => Data->Cost;
+        public override int CarrierCapacity => Data->Features[ModelProperty.Carrier] * Data->TransportMultiplier;
+        public override int Fuel => Data->Features[ModelProperty.Fuel];
+        public override int Weight => Data->Weight;
 
-        public override ModelKind Kind
-        {
-            get
-            {
-                ModelKind kind = (ModelKind)(address[4] & 0xFF);
-                if (kind == ModelKind.Settlers && ((address[5] >> 16) & 0xFFFF) > 150) // assume fast settlers are engineers
-                    return ModelKind.Engineers;
-                else
-                    return kind;
-            }
-        }
-
-        public override Nation Nation { get { return theEmpire.Us; } }
-        public override ModelDomain Domain { get { return (ModelDomain)((address[4] >> 8) & 0xFF); } }
-        public override int Attack { get { return (address[4] >> 16) & 0xFFFF; } }
-        public override int AttackPlusWithBombs { get { return capacity[(int)ModelProperty.Bombs] * Stage.StrengthMultiplier * 2; } }
-        public override int Defense { get { return address[5] & 0xFFFF; } }
-        public override int Speed { get { return (address[5] >> 16) & 0xFFFF; } }
-        public override int Cost { get { return address[6] & 0xFFFF; } }
-        public override int CarrierCapacity { get { return capacity[(int)ModelProperty.Carrier] * Stage.TransportMultiplier; } }
-        public override int Fuel { get { return capacity[(int)ModelProperty.Fuel]; } }
-        public override int Weight { get { return (address[7] >> 16) & 0xFF; } }
-
-        public override int TransportCapacity
-        {
-            get
-            {
-                if (Domain == ModelDomain.Air)
-                    return capacity[(int)ModelProperty.AirTransport] * Stage.TransportMultiplier;
-                else
-                    return capacity[(int)ModelProperty.SeaTransport] * Stage.TransportMultiplier;
-            }
-        }
+        public override int TransportCapacity =>
+            Domain == ModelDomain.Air ? Data->Features[ModelProperty.AirTransport] * Data->TransportMultiplier
+                                      : Data->Features[ModelProperty.SeaTransport] * Data->TransportMultiplier;
 
         /// <summary>
         /// Whether model has a certain feature.
-        /// Does not work for capacities (Weapons, Armor, Mobility, SeaTransport, Carrier, Turbines, Bombs, Fuel), always returns false for these.
+        /// Does not work for capacities (Weapons, Armor, Mobility, SeaTransport, Carrier, Turbines, Bombs, Fuel),
+        /// always returns false for these.
         /// </summary>
         /// <param name="feature">the feature</param>
         /// <returns>true if model has feature, false if not</returns>
-        public override bool HasFeature(ModelProperty feature)
-        {
-            if ((int)feature >= Protocol.mcFirstNonCap)
-                return capacity[(int)feature] > 0;
-            else
-                return false; // to maintain consistency with AForeignModel (capacities have special properties)
-        }
+        public override bool HasFeature(ModelProperty feature) =>
+            feature >= ModelProperty.FirstBooleanProperty && Data->Features[feature] > 0;
+
+        public override bool HasZoC => (Data->Flags & ModelFlags.ZoC) != 0;
+        public override bool IsCivil => (Data->Flags & ModelFlags.Civil) != 0;
+        protected override ModelKind KindOnServer => Data->Kind;
         #endregion
 
-        public bool RequiresDoubleSupport { get { return (address[9] & Protocol.mdDoubleSupport) != 0; } }
+        public bool RequiresDoubleSupport => (Data->Flags & ModelFlags.DoubleSupport) != 0;
 
-        public int TurnOfIntroduction { get { return (address[2] >> 16) & 0xFFFF; } }
-        public Stage Stage { get { return new Stage((address[7] >> 24) & 0xFF, (address[6] >> 16) & 0xFFFF, address[7] & 0xFF, (address[7] >> 8) & 0xFF, address[8]); } }
-        public int NumberBuilt { get { return address[3] & 0xFFFF; } }
-        public int NumberLost { get { return (address[3] >> 16) & 0xFFFF; } }
+        public int TurnOfIntroduction => Data->TurnOfIntroduction;
+        public int NumberBuilt => Data->UnitsBuilt;
+        public int NumberLost => Data->UnitsLost;
 
         /// <summary>
         /// persistent custom value
         /// </summary>
         public int Status
         {
-            get { return address[0]; }
-            set { address[0] = value; }
+            get => Data->Status;
+            set => Data->Status = value;
+        }
+    }
+
+    unsafe class ForeignModelList : IReadableIdIndexedArray<ForeignModelId, ForeignModel>
+    {
+        private readonly EmpireData* EmpirePtr;
+        private readonly ForeignModelData.Ptr ModelsPtr;
+        private readonly AEmpire TheEmpire;
+        private readonly IdIndexedList<ForeignModelId, ForeignModel> Models =
+            new IdIndexedList<ForeignModelId, ForeignModel>();
+
+        public ForeignModelList(AEmpire theEmpire)
+        {
+            TheEmpire = theEmpire;
+            EmpirePtr = theEmpire.Data;
+            ModelsPtr = EmpirePtr->ForeignModelsData;
         }
 
-        #region template internal stuff
-        /// <summary>
-        /// INTERNAL - only access from CevoAILib classes!
-        /// </summary>
-        public int IndexInSharedMemory;
+        public int Count => EmpirePtr->NumForeignModels;
 
-        int* address;
-        #endregion    
+        public ForeignModel this[ForeignModelId id]
+        {
+            get
+            {
+                if (Models.Count < Count)
+                    Update();
+                return Models[id];
+            }
+        }
+
+        private void Update()
+        {
+            var firstNewId = new ForeignModelId((short) Models.Count);
+            var lastNewId = new ForeignModelId((short) (Count - 1));
+            foreach (ForeignModelId modelId in ForeignModelId.Range(firstNewId, lastNewId))
+                Models.Add(new ForeignModel(TheEmpire, modelId, ModelsPtr[modelId]));
+        }
+
+        public IEnumerator<ForeignModel> GetEnumerator()
+        {
+            if (Models.Count < Count)
+                Update();
+            return Models.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
     /// <summary>
     /// foreign model, abstract base class
     /// </summary>
-    unsafe abstract class AForeignModel : ModelBase
+    abstract unsafe class AForeignModel : ModelBase
     {
-        protected readonly Empire theEmpire;
+        protected readonly AEmpire TheEmpire;
+        public readonly ForeignModelId Id;
+        protected readonly ForeignModelData* Data;
 
-        public AForeignModel(Empire empire, int indexInSharedMemory)
+        protected AForeignModel(AEmpire empire, ForeignModelId id, ForeignModelData* data)
         {
-            this.theEmpire = empire;
-            this.indexInSharedMemory = indexInSharedMemory;
-            address = (int*)theEmpire.address[9] + ROReadPoint.SizeOfModelInfo * indexInSharedMemory;
+            TheEmpire = empire;
+            Id = id;
+            Data = data;
         }
 
-        public override string ToString()
-        {
-            if (Kind == ModelKind.OwnDesign || Kind == ModelKind.ForeignDesign)
-                return string.Format("Model{0}.{1}({2}/{3}/{4})", (address[1] >> 12) & 0xF, address[1] & 0xFFF, Attack, Defense, Speed);
-            else
-                return string.Format("{0}", Kind);
-        }
+        public override string ToString() => Kind == ModelKind.OwnDesign || Kind == ModelKind.ForeignDesign
+            ? $"Model{GlobalId.Developer}.{GlobalId.SerialNumber}({Attack}/{Defense}/{Speed})"
+            : $"{Kind}";
 
-        #region IModel Members
+        #region ModelBase Members
         /// <summary>
         /// unique model ID
         /// </summary>
-        public override int ID { get { return address[1] & 0xFFFF; } }
-
-        public override ModelKind Kind
-        {
-            get
-            {
-                ModelKind kind = (ModelKind)((address[1] >> 16) & 0xFF);
-                if (kind == ModelKind.Settlers && (address[3] & 0xFFFF) > 150) // assume fast settlers are engineers
-                    return ModelKind.Engineers;
-                else
-                    return kind;
-            }
-        }
-
-        public override Nation Nation { get { return new Nation(theEmpire, address[0] & 0xFFFF); } }
-        public override ModelDomain Domain { get { return (ModelDomain)((address[1] >> 24) & 0xFF); } }
-        public override int Attack { get { return address[2] & 0xFFFF; } }
-        public override int AttackPlusWithBombs { get { return (address[4] >> 16) & 0xFFFF; } }
-        public override int Defense { get { return (address[2] >> 16) & 0xFFFF; } }
-        public override int Speed { get { return address[3] & 0xFFFF; } }
-        public override int Cost { get { return (address[3] >> 16) & 0xFFFF; } }
-        public override int TransportCapacity { get { return address[4] & 0xFF; } }
-        public override int Weight { get { return (address[6] >> 8) & 0xFF; } }
-
-        public override int CarrierCapacity
-        {
-            get
-            {
-                if (Domain == ModelDomain.Sea)
-                    return (address[4] >> 8) & 0xFF;
-                else
-                    return 0;
-            }
-        }
-
-        public override int Fuel
-        {
-            get
-            {
-                if (Domain == ModelDomain.Air)
-                    return (address[4] >> 8) & 0xFF;
-                else
-                    return 0;
-            }
-        }
+        public override GlobalModelId GlobalId => Data->GlobalId;
+        public override Nation Nation => new Nation(TheEmpire, Data->NationId);
+        public override ModelDomain Domain => Data->Domain;
+        public override int Attack => Data->Attack;
+        public override int AttackPlusWithBombs => Data->AttackPlusWithBombs;
+        public override int Defense => Data->Defense;
+        public override int Speed => Data->Speed;
+        public override int Cost => Data->Cost;
+        public override int TransportCapacity => Data->TransportCapacity;
+        public override int Weight => Data->Weight;
+        public override int CarrierCapacity => Domain == ModelDomain.Sea ? Data->CarrierCapacityOrFuel : 0;
+        public override int Fuel => Domain == ModelDomain.Air ? Data->CarrierCapacityOrFuel : 0;
 
         /// <summary>
         /// Whether model has a certain feature.
-        /// Does not work for capacities (Weapons, Armor, Mobility, SeaTransport, Carrier, Turbines, Bombs, Fuel), always returns false for these.
+        /// Does not work for capacities (Weapons, Armor, Mobility, SeaTransport, Carrier, Turbines, Bombs, Fuel),
+        /// always returns false for these.
         /// </summary>
         /// <param name="feature">the feature</param>
         /// <returns>true if model has feature, false if not</returns>
-        public override bool HasFeature(ModelProperty feature)
-        {
-            if ((int)feature >= Protocol.mcFirstNonCap)
-                return (address[5] & (1 << ((int)feature - Protocol.mcFirstNonCap))) != 0;
-            else
-                return false;
-        }
+        public override bool HasFeature(ModelProperty feature) =>
+            feature >= ModelProperty.Navigation && Data->Features[feature];
+
+        public override bool HasZoC => Domain == ModelDomain.Ground && Kind != ModelKind.SpecialCommando;
+        public override bool IsCivil => Attack + AttackPlusWithBombs == 0 || Kind == ModelKind.SpecialCommando;
+        protected override ModelKind KindOnServer => Data->Kind;
         #endregion
 
-        public int NumberDefeatet { get { return (address[6] >> 16) & 0xFFFF; } }
+        public int NumberDefeated => Data->DestroyedByUs;
 
         #region template internal stuff
-        int indexInSharedMemory = -1;
-        int* address;
-
         /// <summary>
         /// INTERNAL - only access from CevoAILib classes!
         /// </summary>
-        public int IndexInNationsSharedMemory { get { return (address[0] >> 16) & 0xFFFF; } }
+        public ForeignOwnModelId OwnersModelId => Data->OwnersModelId;
         #endregion    
     }
 
@@ -325,7 +311,7 @@ namespace CevoAILib
     /// </summary>
     class Blueprint : AModel
     {
-        public Blueprint(Empire empire)
+        public Blueprint(AEmpire empire)
             : base(empire)
         {
         }
@@ -335,13 +321,9 @@ namespace CevoAILib
         /// </summary>
         /// <param name="domain">the domain</param>
         /// <returns>result of operation</returns>
-        public PlayResult SetDomain__Turn(ModelDomain domain)
-        {
-            if (theEmpire.Researching == Advance.MilitaryResearch)
-                return new PlayResult(PlayError.ResearchInProgress);
-            else
-                return theEmpire.Play(Protocol.sCreateDevModel, (int)domain);
-        }
+        public PlayResult SetDomain__Turn(ModelDomain domain) => TheEmpire.Researching == Advance.MilitaryResearch
+            ? new PlayResult(PlayError.ResearchInProgress)
+            : TheEmpire.Play(Protocol.sCreateDevModel, (int)domain);
 
         /// <summary>
         /// Set property of model. Do this after setting the domain. Earlier calls for the same property are voided.
@@ -349,12 +331,9 @@ namespace CevoAILib
         /// <param name="property">the property</param>
         /// <param name="value">for capacities: count of usage, for features: 1 = use, 0 = don't use</param>
         /// <returns>result of operation</returns>
-        public PlayResult SetProperty__Turn(ModelProperty property, int value)
-        {
-            if (theEmpire.Researching == Advance.MilitaryResearch)
-                return new PlayResult(PlayError.ResearchInProgress);
-            else
-                return theEmpire.Play(Protocol.sSetDevModelCap + (value << 4), (int)property);
-        }
+        public PlayResult SetProperty__Turn(ModelProperty property, int value) =>
+            TheEmpire.Researching == Advance.MilitaryResearch
+            ? new PlayResult(PlayError.ResearchInProgress)
+            : TheEmpire.Play(Protocol.sSetDevModelCap + (value << 4), (int) property);
     }
 }

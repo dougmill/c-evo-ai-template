@@ -4,18 +4,18 @@ using CevoAILib;
 
 namespace AI
 {
-    sealed class Model : AModel
+    sealed unsafe class Model : AModel
     {
-        public Model(Empire empire, int indexInSharedMemory)
-            : base(empire, indexInSharedMemory)
+        public Model(AEmpire empire, ModelId id, ModelData* data)
+            : base(empire, id, data)
         {
         }
     }
 
-    sealed class ForeignModel : AForeignModel
+    sealed unsafe class ForeignModel : AForeignModel
     {
-        public ForeignModel(Empire empire, int indexInSharedMemory)
-            : base(empire, indexInSharedMemory)
+        public ForeignModel(AEmpire empire, ForeignModelId id, ForeignModelData* data)
+            : base(empire, id, data)
         {
         }
     }
