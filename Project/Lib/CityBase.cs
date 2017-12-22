@@ -236,14 +236,13 @@ namespace CevoAILib
 
     interface ICitySpyReport : ICity
     {
-        OtherLocation[] Area { get; }
+        IReadOnlyList<OtherLocation> Area { get; }
         Building BuildingInProduction { get; }
         int Control { get; }
         int Corruption { get; }
         int CurrentProjectCost { get; }
         Location[] ExploitedLocations { get; }
         int FoodPile { get; }
-        int FoodStorageLimit { get; }
         int FoodSupport { get; }
         int FoodSurplus { get; }
         int FreeSupport { get; }
@@ -341,7 +340,7 @@ namespace CevoAILib
         /// City area, i.e. the locations of all tiles that might potentially be exploited by the city, including the city location.
         /// Usually the array has 21 elements, but it's less if the city is close to the upper or lower end of the map.
         /// </summary>
-        public OtherLocation[] Area => Location.Distance5AreaAndOffsets;
+        public IReadOnlyList<OtherLocation> Area => Location.Distance5AreaAndOffsets;
 
         /// <summary>
         /// Whether a location is in the area of the city, i.e. might potentially be exploited by it.
@@ -398,7 +397,6 @@ namespace CevoAILib
         public int CurrentProjectCost => Report.CurrentProjectCost;
         public BaseResourceSet TotalResourcesFromArea => Report.TotalResourcesFromArea;
         public int FoodSurplus => Report.FoodSurplus;
-        public int FoodStorageLimit => Report.FoodStorageLimit;
         public int MaterialSurplus => Report.MaterialSurplus;
         public int PollutionPlus => Report.PollutionPlus;
         public int Corruption => Report.Corruption;
@@ -988,7 +986,7 @@ namespace CevoAILib
         /// City area, i.e. the locations of all tiles that might potentially be exploited by the city, including the city location.
         /// Usually the array has 21 elements, but it's less if the city is close to the upper or lower end of the map.
         /// </summary>
-        public OtherLocation[] Area => Location.Distance5AreaAndOffsets;
+        public IReadOnlyList<OtherLocation> Area => Location.Distance5AreaAndOffsets;
 
         /// <summary>
         /// Whether a location is in the area of the city, i.e. might potentially be exploited by it.
@@ -1027,7 +1025,7 @@ namespace CevoAILib
         /// <summary>
         /// size of food storage
         /// </summary>
-        public int StorageSize => FoodStorageLimit;
+        public int StorageSize => Cevo.StorageSize[(int) Nation.DifficultyLevel];
 
         /// <summary>
         /// number of units that might have their home in this city without requiring material support
@@ -1045,7 +1043,6 @@ namespace CevoAILib
         public int CurrentProjectCost => Report.CurrentProjectCost;
         public BaseResourceSet TotalResourcesFromArea => Report.TotalResourcesFromArea;
         public int FoodSurplus => Report.FoodSurplus;
-        public int FoodStorageLimit => Report.FoodStorageLimit;
         public int MaterialSurplus => Report.MaterialSurplus;
         public int PollutionPlus => Report.PollutionPlus;
         public int Corruption => Report.Corruption;

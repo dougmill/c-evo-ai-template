@@ -119,7 +119,7 @@ namespace CevoAILib
         /// <summary>
         /// difficulty level/handicap of this nation
         /// </summary>
-        public DifficultyLevel Difficulty => TheEmpire.DifficultyLevels[Id];
+        public DifficultyLevel DifficultyLevel => TheEmpire.DifficultyLevels[Id];
 
         /// <summary>
         /// The name of the AI running this nation

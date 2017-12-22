@@ -238,24 +238,18 @@ namespace CevoAILib
         /// <summary>
         /// Set of all adjacent locations.
         ///
-        /// All locations returned are on the map. Usually the array has 8 elements, but it's less if the location is
+        /// All locations returned are on the map. Usually the list has 8 elements, but it's less if the location is
         /// close to the upper or lower edge of the map. The result is in order from north to south, then west to east.
-        ///
-        /// Treat the returned array as immutable. It is cached, so alterations will affect the return value of future
-        /// calls.
         /// </summary>
-        public Location[] Neighbors => TheEmpire.Map.NeighborLocations[Id];
+        public IReadOnlyList<Location> Neighbors => TheEmpire.Map.NeighborLocations[Id];
 
         /// <summary>
         /// Set of all adjacent locations with their respective relative coordinates.
         ///
         /// All locations returned are on the map. Usually the array has 8 elements, but it's less if the location is
         /// close to the upper or lower edge of the map. The result is in order from north to south, then west to east.
-        ///
-        /// Treat the returned array as immutable. It is cached, so alterations will affect the return value of future
-        /// calls.
         /// </summary>
-        public OtherLocation[] NeighborsAndOffsets => TheEmpire.Map.NeighborOtherLocations[Id];
+        public IReadOnlyList<OtherLocation> NeighborsAndOffsets => TheEmpire.Map.NeighborOtherLocations[Id];
 
         /// <summary>
         /// Set of all locations with a distance of 5 or less, including the location itself. This is the city radius,
@@ -263,11 +257,8 @@ namespace CevoAILib
         ///
         /// All locations returned are on the map. Usually the array has 21 elements, but it's less if the location is
         /// close to the upper or lower edge of the map. The result is in order from north to south, then west to east.
-        ///
-        /// Treat the returned array as immutable. It is cached, so alterations will affect the return value of future
-        /// calls.
         /// </summary>
-        public Location[] Distance5Area => TheEmpire.Map.Distance5AreaLocations[Id];
+        public IReadOnlyList<Location> Distance5Area => TheEmpire.Map.Distance5AreaLocations[Id];
 
         /// <summary>
         /// Set of all locations with a distance of 5 or less, including the location itself, with their relative
@@ -275,11 +266,8 @@ namespace CevoAILib
         ///
         /// All locations returned are on the map. Usually the array has 21 elements, but it's less if the location is
         /// close to the upper or lower edge of the map. The result is in order from north to south, then west to east.
-        ///
-        /// Treat the returned array as immutable. It is cached, so alterations will affect the return value of future
-        /// calls.
         /// </summary>
-        public OtherLocation[] Distance5AreaAndOffsets => TheEmpire.Map.Distance5AreaOtherLocations[Id];
+        public IReadOnlyList<OtherLocation> Distance5AreaAndOffsets => TheEmpire.Map.Distance5AreaOtherLocations[Id];
         
         /// <summary>
         /// whether this location is adjacent to another one
@@ -418,10 +406,10 @@ namespace CevoAILib
         }
 
         /// <summary>
-        /// Gets the only easily cacheable value with regard to work done on a job here - how much is left to do.
-        /// Treat the returned array as immutable. It is cached, so any changes will affect future calls.
+        /// Gets the only easily cacheable value with regard to work done on a job here - how much is left to do. The
+        /// list is indexed by the values of the Job enum.
         /// </summary>
-        public PlayResult GetWorkRemaining(out JobWorkRemaining[] work)
+        public PlayResult GetWorkRemaining(out IReadOnlyList<JobWorkRemaining> work)
         {
             if (TheEmpire.Map.JobInfo[Id] == null)
             {

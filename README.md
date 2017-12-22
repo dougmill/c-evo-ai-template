@@ -11,7 +11,7 @@ This is an improved and expanded version of Steffen's AI Template for [C-evo](ht
 - The first time you open the solution, you will need to open NuGet package manager from the Tools menu and click the button to restore missing packages.
 - My use of the new C# tuples language feature requires, at least for now, that System.ValueTuple.dll be available in the C-evo folder. Visual Studio should take care of this for you during development, but you'll have to bundle it with your AI dll for other people to use it.
 
-### Versioning:
+### Tool Versions:
 - Updated to Visual Studio 2017.
 - Used language features of C# 6 and 7.
 - Updated the CevoDotNet launcher to .NET 4.0, which is necessary for it to run an AI that uses .NET later than 3.5.
@@ -22,7 +22,7 @@ This is an improved and expanded version of Steffen's AI Template for [C-evo](ht
 - Used string interpolation.
 - Used pattern matching.
 - Used tuples in a few places.
-- Lines wrap at length 120 in most places.
+- Wrapped lines at length 120 in most places.
 - Used standard recommended C# naming patterns, in most cases.
 
 ### Server shared data structures:
@@ -34,14 +34,21 @@ This is an improved and expanded version of Steffen's AI Template for [C-evo](ht
 - All id numbers are now strongly typed. An id of a unit is of type `UnitId`, not of type `int`. This allows the compiler to verify that you are not, for example, accidentally using a city's id number instead.
 - There is a strong distinction between temporary ids, which may refer to different objects next turn, and permanent ids. Temporary ids have some extra support related to the fact that they are direct index numbers into in game data structures.
 
-### Data consistency:
-- Removed most attempts to manually trigger updating of various lists (units, cities, etc.) at each point where they could change.
-- Replaced ToughSet with some purpose-built lists that update themselves automatically, based on when they detect an update is needed, not relying on other code to inform them of it.
-
 ### Bug Fixes:
+- Fixed unreliable updating of the various lists that `ToughSet` was used for. This issue was caused by the design of keeping them up to date by calling an update function every time something happened that could affect them, and missing some of the spots that could affect them. I solved it by completely replacing this scheme with several custom list classes that each check whether an update is needed each time they are accessed, mostly by a quick check of whether their count of objects matches the server's count. `ToughSet` is removed completely.
 - Fixed `Sprawl` bugs reported on forum at http://c-evo.org/bb/viewtopic.php?f=5&t=71 and http://c-evo.org/bb/viewtopic.php?f=5&t=74
 - Fixed bug, reported on forums at http://c-evo.org/bb/viewtopic.php?f=5&t=76, that `Empire.Resume()` is called too early in reloading.
 - Added check for location validity in `-` and `+` operators, as reported at http://c-evo.org/bb/viewtopic.php?f=5&t=77.
+- Fixed bug that Engineers would say they don't add anything to city size.
+
+### Optimizations:
+- Cities
+  - Faster/cached number of exploited locations.
+  - Faster/cached list of exploited locations.
+- Map
+  - Precalculated and cached lists of neighbors and distance 5 areas for all locations for improved performance. Note that these are now declared as `IReadOnlyList`, not arrays, which may require changing some variable types in your code to match.
+  - Cached the work required and work done parts of job information. If you don't need the server to tell you how much progress you're going to make this turn, switch to the new methods.
+  - Used dictionary lookups instead of linear searches for finding city, foreign city, and foreign defender for Location.
 
 ### New features:
 - CevoPedia
@@ -49,39 +56,32 @@ This is an improved and expanded version of Steffen's AI Template for [C-evo](ht
   - Added what special resources a terrain can have to base terrain info.
 - Cities
   - Added calculation of maintenance costs.
-  - Added food storage limit.
-  - Faster/cached number of exploited locations.
   - Added total income calculation, including taxes, food converted to money, overflow material, and trade goods.
   - Added income available for maintenance calculation, which does not include excess for completing a building.
-  - Faster/cached list of exploited locations.
   - Added method to sell progress on current construction project.
 - Foreign cities:
   - Added spy reports on enemy cities.
 - Foreign nations:
   - Stored difficulty levels of all nations.
-  - Added property for AI name, and several named constants for AIs I have.
+  - Added property for AI name, and several named constants for AIs that I have.
   - Added property for what server version the nation's AI was written for. Used a new enum for this, with values for the versions at which various notable rules changes happened.
   - Added property for the nation's difficulty level.
   - Added properties for each of the rules changes that there are enum values for.
 - Map:
-  - Precalculated and cached lists of neighbors and distance 5 areas for all locations for improved performance.
   - Switched RC coordinates from a/b to x/y, for simpler math and to match the server.
-  - Cached the work required and work done parts of job information. If you don't need the server to tell you how much progress you're going to make this turn, switch to the new methods.
   - Locations calculate their position in the repeating special resource pattern.
   - Defined the order of locations in the neighbors and distance 5 arrays.
-  - Changed the neighbor/distance5 accessors on Location to return arrays of Location. If you need the old OtherLocation arrays, use the additional "AndOffsets" properties.
-  - Added convenience properties on Location for what special resource type (basic or science) it would have, one for if ground and another for shore.
+  - Changed the neighbor/distance5 accessors on Location to return lists of Location. If you need the old OtherLocation arrays (now lists), use the additional "AndOffsets" properties.
+  - Added convenience properties on Location for what special resource type (basic or science) it would have, if any, one for if ground and another for shore.
   - Added convenience property on Location for which of grassland or plains it would be, if transformed into one of those terrains.
   - Added Location methods to get how much resources the location would produce, accounting for all terrain improvements, government, etc. If you specify a city, it will also account for that city's buildings.
-  - Used dictionary lookups instead of linear searches for finding city, foreign city, and foreign defender for Location.
   - Added version of GetExploitingCity__Turn() that also returns the resources produced.
 - Models:
   - Removed Stage. The properties of it that might be relevant are now directly in Blueprint.
   - Added CanInvestigateLocations property.
-  - Fixed bug that Engineers would say they don't add anything to city size.
 - Units:
   - Added model, from location and to location, movement (as an RC), and health information to MovingUnit.
-  - Added spy reports on unit stacks. Note that this comes with a behavior change - previously, if you iterated the foreign units list you would only iterate one unit (the strongest defender) per location. Now you will iterate through all known units, including every member of any spied out stacks. A new subcollection is provided for the old behavior, along with another one specifically for stacks. The collection of stacks included non-spied ones, but will only have information about one unit for those.
+  - Added spy reports on unit stacks. Note that this comes with a behavior change - previously, if you iterated the foreign units list you would only iterate one unit (the strongest defender) per location. Now you will iterate through all known units, including every member of any spied out stacks. A new subcollection is provided for the old behavior, along with another one specifically for stacks. The collection of stacks includes non-spied ones, but will only have information about one unit for those.
   - Replaced UnitByLocation with two new methods, GetForeignDefender and GerForeignStack.
 - Empire:
   - Combined parameters of OnForeignMove and OnBeforeForeignAttack into one, with some additional information as well.
@@ -95,4 +95,4 @@ This is an improved and expanded version of Steffen's AI Template for [C-evo](ht
   - Implemented military report, the list of how many of each model a nation that you have a report on has.
 - Persistence:
   - Added abstract partial implementations of IDictionary, IList, and ISet that can be used, with just a little extra to implement in a subclass, to store unlimited arbitrary amounts of data in the save game file. Be aware that the storage is done by recording the sequence of changes made to the collection, so try to be minimal about how many changes you save with them to avoid excessively increasing save file size.
-  - Sample use of a persistent dictionary to store old city spy reports so that, even if you don't currently have a spy in range, you can still check what you saw the last time you did.
+  - Added sample use of a persistent dictionary to store old city spy reports so that, even if you don't currently have a spy in range, you can still check what you saw the last time you did. This includes storing a "spy report" of any of your own cities just before you lose it, showing the state of the city at the last moment it belonged to you.

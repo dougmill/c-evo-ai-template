@@ -68,9 +68,9 @@ namespace AI
             // move units
             foreach (Unit unit in Units)
             {
-                Location[] neighborLocations = unit.Location.Neighbors;
-                if (neighborLocations.Length > 0)
-                    unit.MoveTo__Turn(neighborLocations[random.Next(neighborLocations.Length)]); // move unit to random adjacent location
+                IReadOnlyList<Location> neighborLocations = unit.Location.Neighbors;
+                if (neighborLocations.Count > 0)
+                    unit.MoveTo__Turn(neighborLocations[random.Next(neighborLocations.Count)]); // move unit to random adjacent location
             }
 
             // update saved city spy reports

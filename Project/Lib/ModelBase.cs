@@ -86,7 +86,9 @@ namespace CevoAILib
                                                    HasFeature(ModelProperty.AcademyTraining) ||
                                                    CarrierCapacity > 0;
 
-        public bool CanInvestigateLocations => KindOnServer == ModelKind.SpecialCommando || HasFeature(ModelProperty.SpyPlane);
+        // Note that the Gliders special model is marked as having the SpyPlane feature, so they're covered here too.
+        public bool CanInvestigateLocations =>
+            KindOnServer == ModelKind.SpecialCommando || HasFeature(ModelProperty.SpyPlane);
 
         /// <summary>
         /// whether units of this model are capable of doing settler jobs

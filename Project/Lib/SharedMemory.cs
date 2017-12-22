@@ -390,7 +390,7 @@ namespace CevoAILib
         public Location[] GetLocations(Location center)
         {
             Location[] locations = new Location[NumberOfExploitedLocations];
-            Location[] distance5Area = center.Distance5Area;
+            IReadOnlyList<Location> distance5Area = center.Distance5Area;
             int tiles = Tiles;
 
             // magic (http://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightLinear)
@@ -409,7 +409,7 @@ namespace CevoAILib
                 }
                 else
                 {
-                    int indexOffset = 21 - distance5Area.Length;
+                    int indexOffset = 21 - distance5Area.Count;
                     for (int i = 0; i < locations.Length; i++)
                     {
                         int leastSignificantBit = tiles & -tiles;
