@@ -595,4 +595,35 @@ namespace CevoAILib
         public readonly int Done; // 4 bytes, 8 total
         public readonly int NextTurnPlus; // 4 bytes, 12 total
     }
+
+    /// <summary>
+    /// Layout in game server communication of information about the outcome of a battle. Size 8 bytes.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential, Pack = 4, Size = 8)]
+    struct BattleOutcome
+    {
+        public readonly int EndHealthOfDefender;
+        public readonly int EndHealthOfAttacker;
+
+        public override string ToString() => $"A{EndHealthOfAttacker} D{EndHealthOfDefender}";
+    }
+
+    /// <summary>
+    /// Layout in game server communication of a request for information about what outcome a hypothetical battle
+    /// would have, and the returned result. The writeable fields are the inputs.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 32)]
+    struct BattleForecastData
+    {
+        public NationId AttackerId; // 1 byte, 1 total
+        private readonly byte padding1; // 1 byte, 2 total
+        private readonly short padding2; // 2 bytes, 4 total
+        public int AttackerModelIndex; // 4 bytes, 8 total
+        public int AttackerHealth; // 4 bytes, 12 total
+        public int AttackerExperience; // 4 bytes, 16 total
+        public UnitFlags AttackerFlags; // 2 bytes, 18 total
+        private readonly short padding3; // 2 bytes, 20 total
+        public int Movement; // 4 bytes, 24 total
+        public readonly BattleOutcome Outcome; // 8 bytes, 32 total
+    }
 }

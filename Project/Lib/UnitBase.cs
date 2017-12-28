@@ -10,20 +10,6 @@ namespace CevoAILib
 {
     enum SpyMission { SabotageProduction = 1, StealMaps = 2, CollectThirdNationKnowledge = 3, PrepareDossier = 4, PrepareMilitaryReport = 5 }
 
-    struct BattleOutcome
-    {
-        public readonly int EndHealthOfAttacker;
-        public readonly int EndHealthOfDefender;
-
-        public BattleOutcome(int endHealthOfAttacker, int endHealthOfDefender)
-        {
-            EndHealthOfAttacker = endHealthOfAttacker;
-            EndHealthOfDefender = endHealthOfDefender;
-        }
-
-        public override string ToString() => $"A{EndHealthOfAttacker} D{EndHealthOfDefender}";
-    }
-
     /// <summary>
     /// basic unit information as available for both own and foreign units
     /// </summary>
@@ -421,20 +407,93 @@ namespace CevoAILib
         public PlayResult DoSpyMission__Turn(SpyMission mission, ICity city) =>
             DoSpyMission__Turn(mission, city.Location);
 
-        //bool MoveForecast__Turn(ToLoc; var RemainingMovement: integer)
-        //{
-        //    return true; // todo !!!
-        //}
+        /// <summary>
+        /// Predicts the result of attacking a particular location. The specified location must be observed and must
+        /// have a foreign unit occupying it. Assumes enough movement for full strength.
+        /// </summary>
+        /// <param name="location">location to attack</param>
+        /// <param name="outcome">predicted result of the attack</param>
+        /// <returns>result of operation</returns>
+        public PlayResult AttackForecast__Turn(Location location, out BattleOutcome outcome) =>
+            AttackForecast__Turn(location, 100, out outcome);
 
-        //bool AttackForecast__Turn(ToLoc,AttackMovement; var RemainingHealth: integer)
-        //{
-        //    return true; // todo !!!
-        //}
+        /// <summary>
+        /// Predicts the result of attacking a particular location. The specified location must be observed and must
+        /// have a foreign unit occupying it.
+        /// </summary>
+        /// <param name="location">location to attack</param>
+        /// <param name="movement">movement remaining before the attack</param>
+        /// <param name="outcome">predicted result of the attack</param>
+        /// <returns>result of operation</returns>
+        public PlayResult AttackForecast__Turn(Location location, int movement, out BattleOutcome outcome)
+        {
+            if (!location.HasForeignUnit)
+            {
+                // can't leave this to the server, because the server might return submarine or stealth unit spotted,
+                // allowing locating all such units in all visible locations for free.
+                outcome = new BattleOutcome();
+                return new PlayResult(PlayError.InternalError_InvalidData);
+            }
+            var request = new BattleForecastData
+            {
+                AttackerId = Nation.Id,
+                AttackerModelIndex = ((IId) Model.Id).Index,
+                AttackerHealth = Health,
+                AttackerExperience = Experience,
+                AttackerFlags = Data->Flags,
+                Movement = movement
+            };
+            PlayResult result = TheEmpire.Play(Protocol.sGetBattleForecast, location.Id, &request);
+            outcome = result.OK ? request.Outcome : new BattleOutcome();
+            return result;
+        }
 
-        //bool DefenseForecast__Turn(euix,ToLoc: integer; var RemainingHealth: integer)
-        //{
-        //    return true; // todo !!!
-        //}
+        /// <summary>
+        /// Predicts the result of being attacked by an enemy unit, assuming the enemy has the given amount of movement
+        /// left before the attack. Assumes enough movement for full strength.
+        /// </summary>
+        /// <param name="attacker">the hypothetical attacker</param>
+        /// <param name="outcome">predicted result of the attack</param>
+        /// <returns>result of operation</returns>
+        public PlayResult DefenseForecast__Turn(ForeignUnit attacker, out BattleOutcome outcome) =>
+            DefenseForecast__Turn(attacker, 100, out outcome);
+
+        /// <summary>
+        /// Predicts the result of being attacked by an enemy unit, assuming the enemy has the given amount of movement
+        /// left before the attack.
+        /// </summary>
+        /// <param name="attacker">the hypothetical attacker</param>
+        /// <param name="movement">movement remaining before the attack</param>
+        /// <param name="outcome">predicted result of the attack</param>
+        /// <returns>result of operation</returns>
+        public PlayResult DefenseForecast__Turn(ForeignUnit attacker, int movement, out BattleOutcome outcome) =>
+            DefenseForecast__Turn(attacker.Model, attacker.Health, attacker.Experience, movement, out outcome);
+
+        /// <summary>
+        /// Predicts the result of being attacked by a hypothetical enemy unit.
+        /// </summary>
+        /// <param name="attacker">the hypothetical attacker's model</param>
+        /// <param name="health">attacker's health</param>
+        /// <param name="experience">attacker's experience</param>
+        /// <param name="movement">movement remaining before the attack</param>
+        /// <param name="outcome">predicted result of the attack</param>
+        /// <returns>result of operation</returns>
+        public PlayResult DefenseForecast__Turn(ForeignModel attacker, int health, int experience, int movement,
+            out BattleOutcome outcome)
+        {
+            var request = new BattleForecastData
+            {
+                AttackerId = attacker.Nation.Id,
+                AttackerModelIndex = ((IId) attacker.OwnersModelId).Index,
+                AttackerHealth = health,
+                AttackerExperience = experience,
+                AttackerFlags = UnitFlags.BombsLoaded, // the only flag that matters, and we can't see its real value
+                Movement = movement
+            };
+            PlayResult result = TheEmpire.Play(Protocol.sGetBattleForecast, Location.Id, &request);
+            outcome = result.OK ? request.Outcome : new BattleOutcome();
+            return result;
+        }
 
         /// <summary>
         /// Disband unit. If located in city producing a unit, utilize material.
