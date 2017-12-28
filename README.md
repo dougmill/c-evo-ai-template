@@ -59,6 +59,7 @@ This is an improved and expanded version of Steffen's AI Template for [C-evo](ht
   - Added total income calculation, including taxes, food converted to money, overflow material, and trade goods.
   - Added income available for maintenance calculation, which does not include excess for completing a building.
   - Added method to sell progress on current construction project.
+  - Added method to manually control exactly which locations a city exploits.
 - Foreign cities:
   - Added spy reports on enemy cities.
 - Foreign nations:
@@ -83,6 +84,7 @@ This is an improved and expanded version of Steffen's AI Template for [C-evo](ht
   - Added model, from location and to location, movement (as an RC), and health information to MovingUnit.
   - Added spy reports on unit stacks. Note that this comes with a behavior change - previously, if you iterated the foreign units list you would only iterate one unit (the strongest defender) per location. Now you will iterate through all known units, including every member of any spied out stacks. A new subcollection is provided for the old behavior, along with another one specifically for stacks. The collection of stacks includes non-spied ones, but will only have information about one unit for those.
   - Replaced UnitByLocation with two new methods, GetForeignDefender and GerForeignStack.
+  - Added attack and defense forecast methods, to get predictions of what the outcome of a particular battle would be.
 - Empire:
   - Combined parameters of OnForeignMove and OnBeforeForeignAttack into one, with some additional information as well.
   - Added OnUnitChanged method, which is called when units move into and out of visibility. And in a few other circumstances that the server doesn't distinguish for this, unfortunately.
