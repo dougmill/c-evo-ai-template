@@ -662,6 +662,9 @@ namespace CevoAILib
 
         int IId.Index => Id;
 
+        public int[] Serialize() => new[] {Id};
+        public static LocationId Deserialize(int[] serialized) => new LocationId(serialized[0]);
+
         public static bool operator ==(LocationId id1, LocationId id2) => id1.Id == id2.Id;
         public static bool operator !=(LocationId id1, LocationId id2) => id1.Id != id2.Id;
 
@@ -936,6 +939,11 @@ namespace CevoAILib
         public NationId Developer => new NationId(Id >> 12);
         public int SerialNumber => Id & 0xFFF;
 
+        private GlobalModelId(short id) => Id = id;
+
+        public int[] Serialize() => new int[] {Id};
+        public static GlobalModelId Deserialize(int[] serialized) => new GlobalModelId((short) serialized[0]);
+
         public static bool operator ==(GlobalModelId id1, GlobalModelId id2) => id1.Id == id2.Id;
         public static bool operator !=(GlobalModelId id1, GlobalModelId id2) => id1.Id != id2.Id;
 
@@ -1003,6 +1011,9 @@ namespace CevoAILib
         public static ModelId Invalid = new ModelId(-1);
 
         int IId.Index => Id;
+
+        public int[] Serialize() => new int[] {Id};
+        public static ModelId Deserialize(int[] serialized) => new ModelId((short) serialized[0]);
 
         public static bool operator ==(ModelId id1, ModelId id2) => id1.Id == id2.Id;
         public static bool operator !=(ModelId id1, ModelId id2) => id1.Id != id2.Id;
@@ -1173,6 +1184,9 @@ namespace CevoAILib
 
         int IId.Index => Id;
 
+        public int[] Serialize() => new int[] {Id};
+        public static ForeignModelId Deserialize(int[] serialized) => new ForeignModelId((short) serialized[0]);
+
         public static bool operator ==(ForeignModelId id1, ForeignModelId id2) => id1.Id == id2.Id;
         public static bool operator !=(ForeignModelId id1, ForeignModelId id2) => id1.Id != id2.Id;
 
@@ -1228,6 +1242,9 @@ namespace CevoAILib
         public static ForeignOwnModelId Invalid = new ForeignOwnModelId(-1);
 
         int IId.Index => Id;
+
+        public int[] Serialize() => new int[] {Id};
+        public static ForeignOwnModelId Deserialize(int[] serialized) => new ForeignOwnModelId((short) serialized[0]);
 
         public static bool operator ==(ForeignOwnModelId id1, ForeignOwnModelId id2) => id1.Id == id2.Id;
         public static bool operator !=(ForeignOwnModelId id1, ForeignOwnModelId id2) => id1.Id != id2.Id;
@@ -1429,6 +1446,11 @@ namespace CevoAILib
 
         public bool IsValid => Id >= 0;
 
+        private PersistentUnitId(short id) => Id = id;
+
+        public int[] Serialize() => new int[] {Id};
+        public static PersistentUnitId Deserialize(int[] serialized) => new PersistentUnitId((short) serialized[0]);
+
         public static bool operator ==(PersistentUnitId id1, PersistentUnitId id2) => id1.Id == id2.Id;
         public static bool operator !=(PersistentUnitId id1, PersistentUnitId id2) => id1.Id != id2.Id;
 
@@ -1515,6 +1537,9 @@ namespace CevoAILib
         public NationId(int id) => Id = (sbyte)id;
 
         int IId.Index => Id;
+
+        public int[] Serialize() => new int[] {Id};
+        public static NationId Deserialize(int[] serialized) => new NationId(serialized[0]);
 
         public static bool operator ==(NationId id1, NationId id2) => id1.Id == id2.Id;
         public static bool operator !=(NationId id1, NationId id2) => id1.Id != id2.Id;
