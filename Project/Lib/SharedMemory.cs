@@ -196,11 +196,13 @@ namespace CevoAILib
 
         public override string ToString() => $"Founder: {Founder}, Number: {SerialNumber}";
 
+#if DEBUG
         // intended for use in setting conditional breakpoints for debugging
         public static bool operator ==(PersistentCityId id, int num) => id.Id == num;
         public static bool operator !=(PersistentCityId id, int num) => id.Id != num;
         public static bool operator ==(int num, PersistentCityId id) => id.Id == num;
         public static bool operator !=(int num, PersistentCityId id) => id.Id != num;
+#endif
     }
 
     /// <summary>
@@ -694,11 +696,13 @@ namespace CevoAILib
 
         public override string ToString() => Id.ToString();
 
+#if DEBUG
         // intended for use in setting conditional breakpoints for debugging
         public static bool operator ==(LocationId id, int num) => id.Id == num;
         public static bool operator !=(LocationId id, int num) => id.Id != num;
         public static bool operator ==(int num, LocationId id) => id.Id == num;
         public static bool operator !=(int num, LocationId id) => id.Id != num;
+#endif
 
         /// <summary>
         /// Iterates from the first valid id through the given number of ids.
@@ -979,11 +983,13 @@ namespace CevoAILib
 
         public override string ToString() => Id.ToString();
 
+#if DEBUG
         // intended for use in setting conditional breakpoints for debugging
         public static bool operator ==(GlobalModelId id, int num) => id.Id == num;
         public static bool operator !=(GlobalModelId id, int num) => id.Id != num;
         public static bool operator ==(int num, GlobalModelId id) => id.Id == num;
         public static bool operator !=(int num, GlobalModelId id) => id.Id != num;
+#endif
     }
 
     /// <summary>
@@ -1056,11 +1062,13 @@ namespace CevoAILib
 
         public override string ToString() => Id.ToString();
 
+#if DEBUG
         // intended for use in setting conditional breakpoints for debugging
         public static bool operator ==(ModelId id, int num) => id.Id == num;
         public static bool operator !=(ModelId id, int num) => id.Id != num;
         public static bool operator ==(int num, ModelId id) => id.Id == num;
         public static bool operator !=(int num, ModelId id) => id.Id != num;
+#endif
 
         /// <summary>
         /// Iterates from the first valid id through the given number of ids.
@@ -1234,11 +1242,13 @@ namespace CevoAILib
 
         public override string ToString() => Id.ToString();
 
+#if DEBUG
         // intended for use in setting conditional breakpoints for debugging
         public static bool operator ==(ForeignModelId id, int num) => id.Id == num;
         public static bool operator !=(ForeignModelId id, int num) => id.Id != num;
         public static bool operator ==(int num, ForeignModelId id) => id.Id == num;
         public static bool operator !=(int num, ForeignModelId id) => id.Id != num;
+#endif
 
         /// <summary>
         /// Iterates from the first valid id through the given number of ids.
@@ -1299,11 +1309,13 @@ namespace CevoAILib
 
         public override string ToString() => Id.ToString();
 
+#if DEBUG
         // intended for use in setting conditional breakpoints for debugging
         public static bool operator ==(ForeignOwnModelId id, int num) => id.Id == num;
         public static bool operator !=(ForeignOwnModelId id, int num) => id.Id != num;
         public static bool operator ==(int num, ForeignOwnModelId id) => id.Id == num;
         public static bool operator !=(int num, ForeignOwnModelId id) => id.Id != num;
+#endif
 
         /// <summary>
         /// Iterates from the first valid id through the given number of ids.
@@ -1510,11 +1522,13 @@ namespace CevoAILib
 
         public override string ToString() => Id.ToString();
 
+#if DEBUG
         // intended for use in setting conditional breakpoints for debugging
         public static bool operator ==(PersistentUnitId id, int num) => id.Id == num;
         public static bool operator !=(PersistentUnitId id, int num) => id.Id != num;
         public static bool operator ==(int num, PersistentUnitId id) => id.Id == num;
         public static bool operator !=(int num, PersistentUnitId id) => id.Id != num;
+#endif
     }
 
     /// <summary>
@@ -1606,11 +1620,13 @@ namespace CevoAILib
 
         public override string ToString() => Id.ToString();
 
+#if DEBUG
         // intended for use in setting conditional breakpoints for debugging
         public static bool operator ==(NationId id, int num) => id.Id == num;
         public static bool operator !=(NationId id, int num) => id.Id != num;
         public static bool operator ==(int num, NationId id) => id.Id == num;
         public static bool operator !=(int num, NationId id) => id.Id != num;
+#endif
 
         /// <summary>
         /// Iterates from the first valid id through the given number of ids.
