@@ -61,7 +61,7 @@ namespace CevoAILib
         public readonly int Research;
         public readonly int Wealth;
 
-        public Economy(int taxRate, int wealth) => (TaxRate, Wealth, Research) = (taxRate, 100 - taxRate - wealth, wealth);
+        public Economy(int taxRate, int wealth) => (TaxRate, Research, Wealth) = (taxRate, 100 - taxRate - wealth, wealth);
 
         public override string ToString() => $"T{TaxRate} R{Research} W{Wealth}";
     }
