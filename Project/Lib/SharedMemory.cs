@@ -364,9 +364,20 @@ namespace CevoAILib
         /// <summary>
         /// A bit array indicating which tiles are currently used by the city. Bit indices cover the 4x7 (e/w x n/s)
         /// rectangle that includes the city radius, starting with the northwest corner in the ones bit and going in
-        /// order, west to east then north to south.
+        /// order, west to east then north to south. For anything but communicating with the server, it's probably
+        /// easier and better to use NumberOfExploitedLocations and/or GetLocations.
         /// </summary>
-        private readonly int Tiles;
+        public readonly int Tiles;
+
+        /// <summary>
+        /// Input tiles are relative to the central location.
+        /// </summary>
+        public ExploitedTiles(IEnumerable<RC> tiles)
+        {
+            Tiles = 0;
+            foreach (RC tile in tiles)
+                Tiles |= 1 << (((tile.x + 3) >> 1) + (tile.y + 3) * 4);
+        }
 
         private static readonly int[] AdjustedDeBruijnBitPositions = {
             0, 0, 0, 1, 0, 11, 0, 0, 0, 18, 16, 0, 19, 13, 2, 5,

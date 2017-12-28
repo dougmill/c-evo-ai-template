@@ -504,6 +504,29 @@ namespace CevoAILib
         }
 
         /// <summary>
+        /// Change selection of tiles to exploit by the city.
+        /// Does not touch the tile selection of other cities.
+        /// </summary>
+        /// <param name="locations">The tiles to set this city to exploit. Must include the city tile.</param>
+        /// <returns>result of operation</returns>
+        public PlayResult SetExploitedLocations__Turn(ISet<Location> locations)
+        {
+            var tiles = new List<RC>();
+            foreach (Location location in locations)
+            {
+                RC tile = location - Location;
+                if (tile.Distance > 5)
+                    return new PlayResult(PlayError.InternalError_InvalidData);
+                tiles.Add(tile);
+            }
+            var toExploit = new ExploitedTiles(tiles);
+            PlayResult result = TheEmpire.Play(Protocol.sSetCityTiles, Id, toExploit.Tiles);
+            if (result.Effective)
+                InvalidateReport();
+            return result;
+        }
+
+        /// <summary>
         /// Change production project to a unit.
         /// </summary>
         /// <param name="model">model of the unit to produce</param>
